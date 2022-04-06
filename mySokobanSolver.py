@@ -43,10 +43,12 @@ def my_team():
     
     '''
 #    return [ (1234567, 'Ada', 'Lovelace'), (1234568, 'Grace', 'Hopper'), (1234569, 'Eva', 'Tardos') ]
-    raise NotImplementedError()
-
+    return [ (9712291, 'Jake', 'Burrell') ]
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+# Suggested to use
+# itertools.combinations
+# Adapt a breadth first search 
 
 def taboo_cells(warehouse):
     '''  
