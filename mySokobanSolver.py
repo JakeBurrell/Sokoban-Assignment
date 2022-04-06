@@ -29,8 +29,13 @@ Last modified by 2022-03-27  by f.maire@qut.edu.au
 # You have to make sure that your code works with 
 # the files provided (search.py and sokoban.py) as your code will be tested 
 # with these files
+from turtle import position
+from typing import Tuple
 import search 
 import sokoban
+from sokoban import Warehouse
+
+
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -77,6 +82,35 @@ def taboo_cells(warehouse):
     '''
     ##         "INSERT YOUR CODE HERE"    
     raise NotImplementedError()
+
+
+def get_warehouse_interior(warehouse: Warehouse):
+    '''
+    Determines the space that make up the interior of the warehouse
+
+    @param warehouse:
+        a Warehouse object with the worker inside the warehouse
+    
+    @return
+        a sequence of (x,y) pairs, positions within warehouse
+    '''
+    visited = set()
+    frontier = []
+
+    frontier.append(Worker(warehouse.worker))
+    while frontier:
+        worker = frontier.pop()
+        visited.add(worker.position())
+        for worker in worker.moves(warehouse):
+            if (worker.position not in visited
+                and worker not in frontier):
+                frontier.append(worker)
+
+    return visited
+            
+            
+
+
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -174,5 +208,92 @@ def solve_weighted_sokoban(warehouse):
     raise NotImplementedError()
 
 
+
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+# - - - - - - - - - - - - - - - - - - -Classes- - - - - - - - - - - - - - - - - 
+
+
+MOVES = ['up', 'down', 'left', 'right']
+
+
+class Worker:
+    '''
+    A worker within the warehouse
+    '''
+
+    def __init__(self, position):
+
+        self.x = position[0]
+        self.y = position[1]
+
+    def step(self, direction: str):
+        '''
+        Steps forward in the direction provided
+        '''
+        assert direction in MOVES
+        
+        if direction == 'up':
+            self.y += 1
+        elif direction == "down":
+            self.y -= 1
+        elif direction == "right":
+            self.x += 1
+        elif direction == "left":
+            self.x -= 1
+    
+    def moves(self, warehouse: Warehouse):
+        '''
+        Returns a list of possible possitions that could be moved to
+        '''
+        moves = []
+        position = self.position
+        for move in MOVES:
+            self.step(move)
+            if (self.position() not in warehouse.walls):
+                moves.append(self.position())
+            self = Worker(position)
+        return (position)
+
+    def position(self):
+        return (self.x,self.y)
+  
+
+class Path:
+    '''
+    A path within the warehouse 
+    '''
+
+    def __init__(self, position: Tuple):
+        assert len(position) == 2
+        self.steps = []
+        self.steps.append(position) 
+    
+
+class Boxes:
+    '''
+        Boxes within the warehouse
+    '''
+
+    def __init__(self, position: Tuple, weight):
+        self.position = position
+        self.weight = weight
+
+    def moves(self, warehouse: Warehouse, taboo = []):
+        '''
+        Returns a list of possible possitions that could be moved to
+        '''
+        moves = []
+        position = self.position
+        for move in MOVES:
+            self.step(move)
+            if (self.position() not in warehouse.walls
+                and self.position() not in taboo):
+                moves.append(self.position())
+            self = Worker(position)
+        return (position)
+
+# Tests
+if __name__ == '__main__':
+    print("----Tests---- ")
