@@ -31,9 +31,14 @@ Last modified by 2022-03-27  by f.maire@qut.edu.au
 # with these files
 from turtle import position
 from typing import Tuple
+
+from cv2 import transform
 import search 
 import sokoban
+
 from sokoban import Warehouse
+from itertools import permutations
+import numpy as np
 
 
 
@@ -53,7 +58,6 @@ def my_team():
 
 # Suggested to use
 # itertools.combinations
-# Adapt a breadth first search 
 
 def taboo_cells(warehouse):
     '''  
@@ -80,13 +84,21 @@ def taboo_cells(warehouse):
        The returned string should NOT have marks for the worker, the targets,
        and the boxes.  
     '''
-    ##         "INSERT YOUR CODE HERE"    
+    corners = []
+    interior = get_warehouse_interior(warehouse)
+    # Check rule 1 on all interior spaces
+    for position in interior:
+        if (Position(position).is_corner() and position not in warehouse.targets):
+            corners.append(position)
+
+
     raise NotImplementedError()
+
 
 
 def get_warehouse_interior(warehouse: Warehouse):
     '''
-    Determines the space that make up the interior of the warehouse
+    Determines the space that makes up the interior of the warehouse
 
     @param warehouse:
         a Warehouse object with the worker inside the warehouse
@@ -99,11 +111,10 @@ def get_warehouse_interior(warehouse: Warehouse):
 
     frontier.append(Worker(warehouse.worker))
     while frontier:
-        worker = frontier.pop()
+        worker = frontier.pop(0)
         visited.add(worker.position())
         for worker in worker.moves(warehouse):
-            if (worker.position not in visited
-                and worker not in frontier):
+            if (worker.position not in visited and worker not in frontier):
                 frontier.append(worker)
 
     return visited
@@ -217,6 +228,29 @@ def solve_weighted_sokoban(warehouse):
 
 MOVES = ['up', 'down', 'left', 'right']
 
+class Position:
+    '''
+    A position within the warhouse
+    '''
+
+    def __init__(self, position: tuple):
+        self.x = position[0]
+        self.y = position[1]
+
+    def is_corner(self, warehouse: Warehouse):
+        # Generate transforms to determine adjacent position
+        transform = list(permutations([0,1,-1], 2))
+        # Remove diagonal tranforms and convert to numpy array
+        transforms = np.array([i for i in transform if 0 in i])
+        adjacent_positions = tuple(map(tuple, [t + [self.x, self.y] for t in transforms]))
+
+        for position in adjacent_positions:
+            if position in warehouse.walls and reversed(position) in warehouse.walls:
+                return True
+        return False
+
+        
+
 
 class Worker:
     '''
@@ -224,9 +258,8 @@ class Worker:
     '''
 
     def __init__(self, position):
-
-        self.x = position[0]
-        self.y = position[1]
+        self.position = position
+        
 
     def step(self, direction: str):
         '''
@@ -235,13 +268,13 @@ class Worker:
         assert direction in MOVES
         
         if direction == 'up':
-            self.y += 1
+            self.position.y += 1
         elif direction == "down":
-            self.y -= 1
+            self.position.y -= 1
         elif direction == "right":
-            self.x += 1
+            self.position.x += 1
         elif direction == "left":
-            self.x -= 1
+            self.position.x -= 1
     
     def moves(self, warehouse: Warehouse):
         '''
@@ -257,7 +290,7 @@ class Worker:
         return (position)
 
     def position(self):
-        return (self.x,self.y)
+        return (self.position.x,self.position.y)
   
 
 class Path:
