@@ -32,7 +32,6 @@ Last modified by 2022-03-27  by f.maire@qut.edu.au
 from turtle import position
 from typing import Tuple
 
-from cv2 import transform
 from grpc import StatusCode
 import search 
 import sokoban
@@ -85,8 +84,10 @@ def taboo_cells(warehouse):
        The returned string should NOT have marks for the worker, the targets,
        and the boxes.  
     '''
+    
     corners = set()
     interior = get_warehouse_interior(warehouse)
+    
     # Check rule 1 on all interior spaces
     for position in interior:
         if (SokobanPuzzle.is_corner(position, warehouse.walls) and position not in warehouse.targets):
@@ -106,8 +107,7 @@ def taboo_cells(warehouse):
         taboo_edge = check_edge(row_cells, warehouse, 0)
 
         # Appends all edge cells to taboo if found by check edges
-        if taboo_edge != None:
-            taboo.update(taboo_edge)
+        if taboo_edge: taboo.update(taboo_edge)
 
         # Get interior cells on the same column as corner
         col_cells = [cell for cell in interior if cell[1] == corner[1]]
@@ -115,10 +115,17 @@ def taboo_cells(warehouse):
         taboo_edge = check_edge(col_cells, warehouse, 1)
 
         # Appends all edge cells to taboo if found by check edges
-        if taboo_edge != None:
-            taboo.update(taboo_edge)
+        if taboo_edge: taboo.update(taboo_edge)
 
-    # Returns warehouse as a string including taboo cells
+    return construct_taboo_string(warehouse, taboo)
+
+
+
+def construct_taboo_string(warehouse: Warehouse, taboo: set):
+    '''
+    Returns warehouse as a string representing the warehouse including only
+    walls and taboo cells
+    '''
 
     # Get warehouse as string
     warehouse_str = str(warehouse)
@@ -141,7 +148,6 @@ def taboo_cells(warehouse):
             column += 1
 
     return taboo_str
-
         
 
 
@@ -180,7 +186,7 @@ def check_edge(cells, warehouse, row_col):
     
         edge_cells.add(cell)
 
-    # Returns if edges if they all have adjacent walls and no target and thus are taboo edges
+    # Returns edges if they all have adjacent walls and are not targets and thus are taboo edges
     if adjacent_walls and not has_target:
         return edge_cells
     else:
@@ -210,26 +216,29 @@ def get_warehouse_interior(warehouse: Warehouse):
     frontier = []
     explored = set() # initial empty set of explored states
 
-
+    # Modified breadth first search
     frontier.append(warehouse.worker)
     while frontier:
         worker = frontier.pop(0)
         explored.add(worker)
-        for move in actions:
+        for move in ACTIONS:
             pos = State.step(worker, move)
             if not has_wall(pos, warehouse.walls):
-
                 if (pos not in explored and worker not in frontier):
                     frontier.append(pos)
 
     return list(explored)
             
 
-actions = ['up', 'down', 'left', 'right']
+
+'''
+Actions that can be made by a the worker
+'''
+ACTIONS = ['Up', 'Down', 'Left', 'Right']
 
 class State:
     '''
-    Represents the state of the problem in the form of the position of the worker
+    Represents the state of the Sokoban problem in the form of the position of the worker
     and the position of the boxes
     '''
 
@@ -240,17 +249,17 @@ class State:
 
     def step(position, direction):
         
-        assert direction in actions
+        assert direction in ACTIONS
 
         new_pos = np.array(position)
         
-        if direction == 'up':
+        if direction == ACTIONS[0]:
             new_pos[1] -= 1
-        elif direction == "down":
+        elif direction == ACTIONS[1]:
             new_pos[1] += 1
-        elif direction == "right":
+        elif direction == ACTIONS[3]:
             new_pos[0] += 1
-        elif direction == "left":
+        elif direction == ACTIONS[2]:
             new_pos[0] -= 1
 
         return tuple(new_pos)
@@ -306,8 +315,7 @@ class SokobanPuzzle(search.Problem):
         @param goals: The position of the targets in the puzzle as a list of tuples
 
         @param walls: The position of the walls in the puzzle as a list of tuples
-#
-#
+        
         @param weights: The weights of each of the boxes
         '''
 
@@ -322,8 +330,21 @@ class SokobanPuzzle(search.Problem):
 
     def box_moveable(self, box, state, action):
         '''
-        Checks to see if a given box is movable in a particular state
+        Checks to see if a given box is movable in a particular state in a given direction
+        Note that this will check for walls and other boxes 
+
+        @param box:
+            The position of the box as a tuple(x,y) to be moved
+
+        @param state:
+            The state of the warehouse in the form of a State object containing the
+            position of the worker and boxes within the warehouse
+
+        @param action:
+            An action or movement of the worker in the form of a string of ['Up', 'Down', 'Left', 'Right']
         '''
+
+        #TODO: Decide if this should include a check for taboo cells
 
         assert isinstance(state, State)
 
@@ -336,7 +357,18 @@ class SokobanPuzzle(search.Problem):
     
     def result(self, state : State, action):
         '''
-        Returns the change in state from particular action
+        Determins the change in state resultant from a particular action
+
+        @param state:
+            The state of the warehouse in the form of a State object containing the
+            position of the worker and boxes within the warehouse
+
+        @param action:
+            An action or movement of the worker in the form of a string of one of the
+            folowing ['Up', 'Down', 'Left', 'Right']
+
+        @return:
+            The state that results from the action 
         '''
 
         assert isinstance(state, State)
@@ -354,12 +386,19 @@ class SokobanPuzzle(search.Problem):
         Return the list of actions that can be executed in the given state.
         
         In this case it will be the directions the worker can move
+
+        @param state:
+            The current State object from which to assess actions from
+        
+        @return:
+            A list of possible action that could be made from the provided state in the
+            form  a string of one of the folowing ['Up', 'Down', 'Left', 'Right']
         
         """
         assert isinstance(state, State)
 
         possible_actions = []
-        for move in actions:
+        for move in ACTIONS:
             new_pos = State.step(state.worker, move)
             # Checks new position not in walls
             if new_pos not in self.walls:
@@ -375,10 +414,29 @@ class SokobanPuzzle(search.Problem):
         return possible_actions
 
     
-    def is_corner(position: tuple, walls):
+    def check_valid_action(walls, state: State, action):
+        '''
+        Checks if an action is valid in the particular state ignoring taboo cells 
+        '''
+        #TODO: Complete this for check_elem_action_sequence already partially complete in actions
+        raise NotImplementedError
+
+
+
+    
+    def is_corner(position: tuple, walls: list):
+        
         '''
         Checks if a particular cell within a Sokoban problem is on a corner or not
+
+        @param position:
+            The position to check in the form tuple(x,y)
+        
+        @param walls:
+            The walls of the warehouse in the form of a list of tuple(x,y)
         '''
+        assert isinstance(position, tuple or list) and isinstance(walls, list)
+
         # Transforms to determine adjacent positions
         transforms = np.array([(-1, 0), (0,-1), (1, 0), (0, 1)])
         # Determine Adjacent cell
@@ -467,7 +525,7 @@ def test_movement():
     wh.load_warehouse("./warehouses/warehouse_01.txt")
     expected_answer = tuple((4,3))
     state = State((4,4), (2,2))
-    state.movement("up")
+    state.movement("Up")
     answer = state.worker
     fcn = state.movement 
     print('<<  Testing {} >>'.format(fcn.__name__))
@@ -547,7 +605,6 @@ def test_taboo_cells():
         print(fcn.__name__, ' failed!  :-(\n')
         print('Expected ');print(expected_answer)
         print('But, received ');print(answer)
-
 
 
 if __name__ == '__main__':
