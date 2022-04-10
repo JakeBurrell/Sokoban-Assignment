@@ -353,7 +353,7 @@ class SokobanPuzzle(search.Problem):
         """
         Return the list of actions that can be executed in the given state.
         
-        In this case it will be the direction the worker can move
+        In this case it will be the directions the worker can move
         
         """
         assert isinstance(state, State)
@@ -376,16 +376,17 @@ class SokobanPuzzle(search.Problem):
 
     
     def is_corner(position: tuple, walls):
+        '''
+        Checks if a particular cell within a Sokoban problem is on a corner or not
+        '''
         # Transforms to determine adjacent positions
-        transforms = list([(-1, 0), (0,-1), (1, 0), (0, 1)])
-        # Remove diagonal tranforms and convert to numpy array
-        transforms = np.array([i for i in transforms if 0 in i])
+        transforms = np.array([(-1, 0), (0,-1), (1, 0), (0, 1)])
         # Determine Adjacent cell
         adjacent_positions = list(map(tuple, [t + [position[0], position[1]] for t in transforms]))
         adjacent_positions.append(adjacent_positions[0])
         for index in range(len(adjacent_positions)-1):
             if adjacent_positions[index] in walls and adjacent_positions[(index + 1)] in walls:
-                return True
+                return True 
         return False
 
 
@@ -396,22 +397,13 @@ class SokobanPuzzle(search.Problem):
 def check_elem_action_seq(warehouse, action_seq):
     '''
     
-    Determine if the sequentransform = list(permutations([0,1,-1], 2)) actions does not necessarily solve the puzzle.
+    Determine if the sequence of actions listed in 'action_seq' is legal or not.
+    
+    Important notes:
+      - a legal sequence of actions does not necessarily solve the puzzle.
       - an action is legal even if it pushes a box onto a taboo cell.
         
-    @param warehouse: a valid Wdef test_taboo_cells():
-    wh = Warehouse()
-    wh.load_warehouse("./warehouses/warehouse_01.txt")
-    expected_answer = '####  \n#X #  \n#  ###\n#   X#\n#   X#\n#XX###\n####  '
-    answer = taboo_cells(wh)
-    fcn = test_taboo_cells    
-    print('<<  Testing {} >>'.format(fcn.__name__))
-    if answer==expected_answer:
-        print(fcn.__name__, ' passed!  :-)\n')
-    else:
-        print(fcn.__name__, ' failed!  :-(\n')
-        print('Expected ');print(expected_answer)
-        print('But, received ');print(answer)arehouse object
+    @param warehouse: a valid Warehouse object
 
     @param action_seq: a sequence of legal actions.
            For example, ['Left', 'Down', Down','Right', 'Up', 'Down']
@@ -425,7 +417,7 @@ def check_elem_action_seq(warehouse, action_seq):
                the sequence of actions.  This must be the same string as the
                string returned by the method  Warehouse.__str__()
     '''
-    
+
     ##         "INSERT YOUR CODE HERE"
     
     raise NotImplementedError()
@@ -444,13 +436,14 @@ def solve_weighted_sokoban(warehouse):
 
     @return
     
+    
         If puzzle cannot be solved 
             return 'Impossible', None
         
-        If a solution was found, transform = list(
-if __name__ == "__main__":
-    wh = Warehouse()
-    wh.load_warehouse("./warehouses/warehouse_03.txt")ight', 'Up', 'Down'
+        If a solution was found, 
+            return S, C 
+            where S is a list of actions that solves
+            the given puzzle coded with 'Left', 'Right', 'Up', 'Down'
             For example, ['Left', 'Down', Down','Right', 'Up', 'Down']
             If the puzzle is already in a goal state, simply return []
             C is the total cost of the action sequence C
@@ -523,6 +516,7 @@ def test_is_corner():
         print(fcn.__name__, ' failed!  :-(\n')
         print('Expected ');print(expected_answer)
         print('But, received ');print(answer)
+
 
 def test_check_edge():
     wh = Warehouse()
