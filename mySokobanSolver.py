@@ -85,9 +85,17 @@ def taboo_cells(warehouse):
        and the boxes.  
     '''
     
-    corners = set()
     interior = get_warehouse_interior(warehouse)
     
+    taboo = calculate_taboo_cells(interior, warehouse)
+
+    return construct_taboo_string(warehouse, taboo)
+
+def calculate_taboo_cells(interior, warehouse):
+    '''
+    Determins a the set of cells that would be considered taboo within a sokoban problem
+    '''
+    corners = set()
     # Check rule 1 on all interior spaces
     for position in interior:
         if (SokobanPuzzle.is_corner(position, warehouse.walls) and position not in warehouse.targets):
@@ -117,7 +125,7 @@ def taboo_cells(warehouse):
         # Appends all edge cells to taboo if found by check edges
         if taboo_edge: taboo.update(taboo_edge)
 
-    return construct_taboo_string(warehouse, taboo)
+    return taboo
 
 
 
@@ -243,11 +251,22 @@ class State:
     '''
 
     def __init__(self, worker, boxes):
+        '''
+        Initializes a state within the sokoban problem
+
+        @param worker: the position of the worker as a tuple in the for (x,y)
+        
+        @param boxes: the positions of the boxes as a list of tuples in the for (x,y)
+        '''
         self.worker = worker
         self.boxes = boxes
 
 
     def step(position, direction):
+
+        '''
+        Determins the change in position that would result from a step in a particular direction
+        '''
         
         assert direction in ACTIONS
 
@@ -270,8 +289,6 @@ class State:
         '''
         self.worker = State.step(self.worker, action)
 
-
-            
 
 
 
@@ -308,9 +325,7 @@ class SokobanPuzzle(search.Problem):
 
         @param ncols: the number of columns in puzzle
 
-        @param worker: the position of the worker as a tuple
-
-        @param boxes: the position of the boxes in the puzzle as a list of tuples
+        @param state: the state of the particular puzzle
 
         @param goals: The position of the targets in the puzzle as a list of tuples
 
@@ -344,7 +359,7 @@ class SokobanPuzzle(search.Problem):
             An action or movement of the worker in the form of a string of ['Up', 'Down', 'Left', 'Right']
         '''
 
-        #TODO: Decide if this should include a check for taboo cells
+        #TODO: Decide if this should include a check for taboo cells, might be best just to treat taboo cells as walls
 
         assert isinstance(state, State)
 
@@ -370,6 +385,8 @@ class SokobanPuzzle(search.Problem):
         @return:
             The state that results from the action 
         '''
+
+        # TODO: Complete and test this function
 
         assert isinstance(state, State)
 
@@ -407,8 +424,9 @@ class SokobanPuzzle(search.Problem):
                     box_num = state.boxes.index(new_pos)
                     # If moves box check box is movable
                     new_box_pos = State.step(state.boxes[box_num], move)
-                    self.box_moveable(new_box_pos, state, move)
-
+                    if self.box_moveable(new_box_pos, state, move):
+                        possible_actions.append(move)
+                    
                 possible_actions.append(move)
             new_pos = state.worker
         return possible_actions
@@ -437,10 +455,12 @@ class SokobanPuzzle(search.Problem):
         '''
         assert isinstance(position, tuple or list) and isinstance(walls, list)
 
-        # Transforms to determine adjacent positions
+        # Transforms to determine adjacent cells
         transforms = np.array([(-1, 0), (0,-1), (1, 0), (0, 1)])
-        # Determine Adjacent cell
+        # Determines Adjacent cell
         adjacent_positions = list(map(tuple, [t + [position[0], position[1]] for t in transforms]))
+        # Appends first element to last element so both the first and last element can be checked together
+        # I.E. the bellow element and the left element are checked for walls together
         adjacent_positions.append(adjacent_positions[0])
         for index in range(len(adjacent_positions)-1):
             if adjacent_positions[index] in walls and adjacent_positions[(index + 1)] in walls:
@@ -606,6 +626,23 @@ def test_taboo_cells():
         print('Expected ');print(expected_answer)
         print('But, received ');print(answer)
 
+def test_actions():
+    wh = Warehouse()
+    wh.load_warehouse("./warehouses/warehouse_01.txt")
+    expected_answer = ['Up', 'Down', 'Right']
+    problem = SokobanPuzzle(wh.nrows, wh.ncols, State(wh.worker, wh.boxes),
+     wh.targets, wh.walls, wh.boxes)
+    checked_state = State(wh.worker, wh.boxes)
+    answer = problem.actions(checked_state)
+    fcn = problem.actions 
+    print('<<  Testing {} >>'.format(fcn.__name__))
+    if answer==expected_answer:
+        print(fcn.__name__, ' passed!  :-)\n')
+    else:
+        print(fcn.__name__, ' failed!  :-(\n')
+        print('Expected ');print(expected_answer)
+        print('But, received ');print(answer)
+
 
 if __name__ == '__main__':
     print("\n\n------------------Tests----------------- \n\n")
@@ -614,6 +651,7 @@ if __name__ == '__main__':
     test_is_corner()
     test_check_edge()
     test_taboo_cells()
+    test_actions()
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
