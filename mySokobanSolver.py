@@ -96,6 +96,13 @@ def taboo_cells(warehouse):
 def calculate_taboo_cells(interior, warehouse):
     '''
     Determins a the set of cells that would be considered taboo within a sokoban problem
+    
+    @param interior:
+        The cells that make up the interior of the warehouse 
+    @param warehouse:
+        The warehouse for which to determine the taboo cells of
+    @return
+        A set containing all the taboo cells within the warehouse as tuples of (x,y)
     '''
     corners = set()
     # Check rule 1 on all interior spaces
@@ -135,6 +142,16 @@ def construct_taboo_string(warehouse: Warehouse, taboo: set):
     '''
     Returns warehouse as a string representing the warehouse including only
     walls and taboo cells
+
+    @param warehouse:
+        The warehouse from which to construct the taboo string from
+
+    @param taboo:
+        The sets of the the taboo cells as tuples in the form (x,y)
+    
+    @return:
+        A string in the same form as a warehouse string but with the workers, 
+        boxes and targets removed and the taboo cells added
     '''
 
     # Get warehouse as string
@@ -161,10 +178,20 @@ def construct_taboo_string(warehouse: Warehouse, taboo: set):
         
 
 
-def check_edge(cells, warehouse, row_col):
+def check_edge(cells, warehouse: Warehouse, row_col):
     '''
     Checks a particular set of cells corresponding to a row or column to see if
     they reside on a taboo edge
+
+    @param cells:
+        A list of cell in the form of tuples (x,y) representing a row column to be
+        checked to see if they represent an edge
+    
+    @param warehouse:
+        A Warehouse object used to check for edges
+    
+    @param row_col:
+        An int of 1 if cells represents a column else 0 if they represent a row
     '''
     assert row_col == 0 or row_col == 1
 
@@ -180,7 +207,7 @@ def check_edge(cells, warehouse, row_col):
             has_target = True
             break
 
-        # If cells are column else if row
+        # If cells are row else if column
         if (row_col == 1):
             above_cell = tuple(cell + np.array([0,1]))
             bellow_cell = tuple( cell + np.array([0,-1]))
@@ -242,7 +269,7 @@ def get_warehouse_interior(warehouse: Warehouse):
 
 
 '''
-Actions that can be made by a the worker
+Actions that can be made by a worker
 '''
 ACTIONS = ['Up', 'Down', 'Left', 'Right']
 
@@ -263,6 +290,9 @@ class State:
         self.worker = worker
         self.boxes = boxes
 
+    '''
+    Overridden methods
+    '''
     def __lt__(self, other):
         return self.worker < other.worker
 
@@ -273,16 +303,28 @@ class State:
         return str((self.worker, self.boxes))
 
     def __hash__(self):
+        '''
+        Used to check set membership 
+        '''
         return hash(self.__key())
-
 
 
     def step(position, direction):
 
         '''
-        Determins the change in position that would result from a step in a particular direction
-        '''
+        Determins the change in position that would result from a step in a
+        particular direction
+
+        @param position:
+            A position from which a step will be made in the form of tuple (x,y)
+
+        @param direction:
+            A direction or ACTION to move, an element of the ACTIONS array
         
+        @return
+            The new position resultant from the action as a tuple (x,y)
+
+        '''
         assert direction in ACTIONS
 
         new_pos = np.array(position)
@@ -356,7 +398,7 @@ class SokobanPuzzle(search.Problem):
         
         @param weights: The weights of each of the boxes
 
-        @param taboo_cells: Taboo cells if one wishes for them to be considered
+        @param taboo_cells: A set of taboo cells if one wishes for them to be considered
         '''
 
         assert isinstance(initial_state, State)
@@ -383,6 +425,10 @@ class SokobanPuzzle(search.Problem):
 
         @param action:
             An action or movement of the worker in the form of a string of ['Up', 'Down', 'Left', 'Right']
+
+        @return:
+            Returns True if the given box is movable in the given state by the given action
+            else returns False
         '''
 
 
@@ -391,6 +437,7 @@ class SokobanPuzzle(search.Problem):
         box_num = state.boxes.index(box)
         new_box_pos = State.step(state.boxes[box_num], action)
         if new_box_pos not in self.walls and new_box_pos not in state.boxes:
+            # Checks if taboo cells are provided and tests if the new box position is in them
             if self.taboo_cells != None and new_box_pos in self.taboo_cells:
                 return False
             return True
@@ -448,6 +495,7 @@ class SokobanPuzzle(search.Problem):
         assert isinstance(state, State)
 
         possible_actions = []
+        # For each allowable ACTION
         for move in ACTIONS:
             new_pos = State.step(state.worker, move)
             # Checks new position not in walls
@@ -456,11 +504,11 @@ class SokobanPuzzle(search.Problem):
                 if new_pos in state.boxes:
                     box_num = state.boxes.index(new_pos)
                     # If moves box check box is movable
-                    new_box_pos = State.step(state.boxes[box_num], move)
                     if self.box_moveable(state.boxes[box_num], state, move):
                         possible_actions.append(move)
                 else:    
                     possible_actions.append(move)
+            # Return new_pos to original positions
             new_pos = state.worker[:]
         return possible_actions
 
@@ -477,6 +525,9 @@ class SokobanPuzzle(search.Problem):
         
         @param walls:
             The walls of the warehouse in the form of a list of tuple(x,y)
+        
+        @return:
+            True if and only if the position represents a corner else returns False
         '''
         assert isinstance(position, tuple or list) and isinstance(walls, list)
 
@@ -485,7 +536,7 @@ class SokobanPuzzle(search.Problem):
         # Determines Adjacent cell
         adjacent_positions = list(map(tuple, [t + [position[0], position[1]] for t in transforms]))
         # Appends first element to last element so both the first and last element can be checked together
-        # I.E. the bellow element and the left element are checked for walls together
+        # I.E. the bellow element and the left element are checked if both walls together
         adjacent_positions.append(adjacent_positions[0])
         for index in range(len(adjacent_positions)-1):
             if adjacent_positions[index] in walls and adjacent_positions[(index + 1)] in walls:
@@ -513,14 +564,18 @@ class SokobanPuzzle(search.Problem):
         # Manhatton distance from workers state1 position to their state2 position
         worker_init = state1.worker
         worker_fin = state2.worker
+        # Calculates cost incurred by worker to get fro state1 to state2
         worker_cost = manhattan_dist(worker_init, worker_fin)
         box_cost = 0
+        # For each box
         for box_num, box in enumerate(state1.boxes):
             box_weight = self.weights[box_num]
+            # If there is a weight incurred by the box and a movement
             if box != state2.boxes[box_num] and box_weight != 0:
+                # Calculate the weight incurred by the box
                 box_dist = manhattan_dist(box, state2.boxes[box_num])
                 box_cost += box_dist * box_weight
-        
+
         return worker_cost + box_cost + c
 
 
@@ -533,7 +588,7 @@ class SokobanPuzzle(search.Problem):
         # once assigned a box each of these values will also need to be multiplied by (1 + each box_weight)
         # note: nodes store the state
 
-        box_dist = []
+        box_dists = []
         targets = self.goals[:]
         dist_target = 0
         # For each box in the node state
@@ -544,9 +599,10 @@ class SokobanPuzzle(search.Problem):
         weights.reverse()
         boxes.reverse()
         for box_num, box in enumerate(boxes):
-            # Calculate manhattan distance and store in box_dist array
+            # Calculate manhattan distance from worker to box 
             distance_box = manhattan_dist(box, node.state.worker)
-            box_dist.append(distance_box)
+            # Store distance in box dist
+            box_dists.append(distance_box)
             distance_targets = []
             # For each of the targets
             for target in targets:
@@ -560,9 +616,10 @@ class SokobanPuzzle(search.Problem):
             # Removes target from targets as it has already been assignment a box
             targets.pop(assigned_target)
 
-        avg_distance_box = np.array(box_dist).mean()
+        # Calculates the average distance to each box
+        max_distance_box = np.array(box_dists).mean()
         
-        total_h = avg_distance_box + dist_target
+        total_h = max_distance_box + dist_target
 
         return total_h
 
@@ -573,11 +630,13 @@ class SokobanPuzzle(search.Problem):
         """For optimization problems, each state has a value.  Hill-climbing
         and related algorithms try to maximize this value."""
 
-        # Thinking this would be the manhattan distance of worker from the initial state
         raise NotImplementedError
 
 
 def manhattan_dist(pos_one: tuple, pos_two: tuple):
+    '''
+    Returns the manhattan distance between two points
+    '''
     assert type(pos_one) == type(pos_two)
     assert isinstance(pos_two, tuple)
 
@@ -611,19 +670,25 @@ def check_elem_action_seq(warehouse, action_seq):
     '''
     assert isinstance(warehouse, Warehouse)
 
+    # Constructs a copy of the warehouse for alteration
+    new_warehouse = warehouse.copy() 
+
+    # Construct problem
     problem = SokobanPuzzle(warehouse.nrows, warehouse.ncols, State(warehouse.worker, warehouse.boxes),
                             warehouse.walls, warehouse.targets, warehouse.weights)
-
+    # Constructs copy of state cause it will be returned
     current_state = problem.initial.copy()
 
-
+    # For each action in the actions sequence 
     for action in action_seq:
+        # If the action in the sequence is not in the actions allowed by the current state of the problem
         if action not in problem.actions(current_state):
             return 'Impossible'
+        # Updates the current state with the result of the action
         current_state = problem.result(current_state, action)
-    
-    warehouse.worker = current_state.worker[:]
-    warehouse.boxes = current_state.boxes[:]
+    # Updates the warehouse copy with the surrent state of the worker and boxes
+    new_warehouse.worker = current_state.worker[:]
+    new_warehouse.boxes = current_state.boxes[:]
     return str(warehouse)
     
 
@@ -669,9 +734,6 @@ def solve_weighted_sokoban(warehouse: Warehouse):
         return "Impossible", None
     else:
         return solution_node.solution(), solution_node.path_cost
-
-
-
 
 
 
@@ -836,7 +898,7 @@ def test_h():
     wh.load_warehouse("./warehouses/warehouse_01.txt")
     problem = SokobanPuzzle(wh.nrows, wh.ncols, State(wh.worker, wh.boxes),
      wh.walls, wh.targets, wh.weights)
-    expected_answer = 5.5
+    expected_answer = [7.5, 421.0]
     state = State(wh.worker, wh.boxes)
     answer = []
     answer.append(problem.h(search.Node(state)) )
