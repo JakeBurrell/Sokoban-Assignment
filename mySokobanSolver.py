@@ -40,6 +40,7 @@ from sokoban import Warehouse
 from itertools import permutations
 import numpy as np
 import re
+import heapq
 
 
 
@@ -262,6 +263,9 @@ class State:
         self.worker = worker
         self.boxes = boxes
 
+    def __lt__(self, state):
+        return self.worker < state.worker
+
 
     def step(position, direction):
 
@@ -482,7 +486,7 @@ class SokobanPuzzle(search.Problem):
         """
         Return True if the state is in a goal state for this particular sokoban problem.
         """
-        assert np.isinstance(state, State)
+        assert isinstance(state, State)
         for box in state.boxes:
             if box not in self.goals:
                 return False
@@ -821,6 +825,19 @@ def test_h():
         print('Expected ');print(expected_answer)
         print('But, received ');print(answer)
 
+def test_solve_weighted_sokoban():
+    wh = Warehouse()
+    wh.load_warehouse("./warehouses/warehouse_09.txt")
+    expected_answer = 5.5
+    answer = solve_weighted_sokoban(wh)
+    fcn = solve_weighted_sokoban
+    print('<<  Testing {} >>'.format(fcn.__name__))
+    if answer==expected_answer:
+        print(fcn.__name__, ' passed!  :-)\n')
+    else:
+        print(fcn.__name__, ' failed!  :-(\n')
+        print('Expected ');print(expected_answer)
+        print('But, received ');print(answer)
 
 
 
@@ -835,6 +852,7 @@ if __name__ == '__main__':
     test_results()
     test_check_elem_action_seq()
     test_h()
+    test_solve_weighted_sokoban()
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
