@@ -367,16 +367,6 @@ class SokobanPuzzle(search.Problem):
     
     '''
 
-    #
-    #         "INSERT YOUR CODE HERE"
-    #
-    #     Revisit the sliding puzzle and the pancake puzzle for inspiration!
-    #
-    #     Note that you will need to add several functions to 
-    #     complete this class. For example, a 'result' method is needed
-    #     to satisfy the interface of 'search.Problem'.
-    #
-    #     You are allowed (and encouraged) to use auxiliary functions and classes
 
     def __init__(self, nrows, ncols, initial_state: State, walls, goals, weights, taboo_cells = None):
         '''
@@ -891,12 +881,20 @@ def test_h():
     wh.load_warehouse("./warehouses/warehouse_01.txt")
     problem = SokobanPuzzle(wh.nrows, wh.ncols, State(wh.worker, wh.boxes),
      wh.walls, wh.targets, wh.weights)
-    expected_answer = [7.5, 421.0]
+    # Actual costs [33, 396, 431] >= h  enure
+    expected_answer = [7.5, 285.5, 421.0]
     state = State(wh.worker, wh.boxes)
     answer = []
     answer.append(problem.h(search.Node(state)) )
-
+    
     # Test 2
+    wh.load_warehouse("./warehouses/warehouse_09.txt")
+    problem = SokobanPuzzle(wh.nrows, wh.ncols, State(wh.worker, wh.boxes),
+     wh.walls, wh.targets, wh.weights)
+    state = State(wh.worker, wh.boxes)
+    answer.append(problem.h(search.Node(state)) )
+
+    # Test 3
     wh.load_warehouse("./warehouses/warehouse_8a.txt")
     problem = SokobanPuzzle(wh.nrows, wh.ncols, State(wh.worker, wh.boxes),
      wh.walls, wh.targets, wh.weights)
@@ -911,7 +909,9 @@ def test_h():
         print('Expected ');print(expected_answer)
         print('But, received ');print(answer)
 
+
 def test_solve_weighted_sokoban():
+    print('<<  Testing {} >>\n'.format(fcn.__name__))
     answer = []
     expected_answer = []
     #Test 1
@@ -966,7 +966,6 @@ def test_solve_weighted_sokoban():
 
 
     fcn = solve_weighted_sokoban
-    print('<<  Testing {} >>'.format(fcn.__name__))
     if answer==expected_answer:
         print(fcn.__name__, ' passed!  :-)\n')
     else:
