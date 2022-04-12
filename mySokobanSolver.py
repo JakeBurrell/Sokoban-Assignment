@@ -31,6 +31,7 @@ Last modified by 2022-03-27  by f.maire@qut.edu.au
 # with these files
 from turtle import position
 from typing import Tuple
+from unittest import result
 
 from grpc import StatusCode
 import search 
@@ -243,11 +244,6 @@ def get_warehouse_interior(warehouse: Warehouse):
     @return
         a sequence of (x,y) pairs, positions within warehouse
     '''
-
-    def has_wall(position, walls):
-        if position in walls:
-            return True
-        return False
  
 
     frontier = []
@@ -260,7 +256,7 @@ def get_warehouse_interior(warehouse: Warehouse):
         explored.add(worker)
         for move in ACTIONS:
             pos = State.step(worker, move)
-            if not has_wall(pos, warehouse.walls):
+            if pos not in warehouse.walls:
                 if (pos not in explored and worker not in frontier):
                     frontier.append(pos)
 
@@ -400,7 +396,6 @@ class SokobanPuzzle(search.Problem):
 
         @param taboo_cells: A set of taboo cells if one wishes for them to be considered
         '''
-
         assert isinstance(initial_state, State)
 
         self.nrows = nrows
@@ -411,13 +406,13 @@ class SokobanPuzzle(search.Problem):
         self.weights = weights
         self.taboo_cells = taboo_cells
 
-    def box_moveable(self, box, state, action):
+    def box_moveable(self, box_num, state, action):
         '''
         Checks to see if a given box is movable in a particular state in a given direction
         Note that this will check for walls and other boxes 
 
-        @param box:
-            The position of the box as a tuple(x,y) to be moved
+        @param box_num:
+            The index to the particular box that is being referenced
 
         @param state:
             The state of the warehouse in the form of a State object containing the
@@ -434,8 +429,9 @@ class SokobanPuzzle(search.Problem):
 
         assert isinstance(state, State)
 
-        box_num = state.boxes.index(box)
+    
         new_box_pos = State.step(state.boxes[box_num], action)
+        # If new box position is not a wall and not a box
         if new_box_pos not in self.walls and new_box_pos not in state.boxes:
             # Checks if taboo cells are provided and tests if the new box position is in them
             if self.taboo_cells != None and new_box_pos in self.taboo_cells:
@@ -504,11 +500,11 @@ class SokobanPuzzle(search.Problem):
                 if new_pos in state.boxes:
                     box_num = state.boxes.index(new_pos)
                     # If moves box check box is movable
-                    if self.box_moveable(state.boxes[box_num], state, move):
+                    if self.box_moveable(box_num, state, move):
                         possible_actions.append(move)
                 else:    
                     possible_actions.append(move)
-            # Return new_pos to original positions
+            # Return new_pos to original position
             new_pos = state.worker[:]
         return possible_actions
 
@@ -588,13 +584,13 @@ class SokobanPuzzle(search.Problem):
         # once assigned a box each of these values will also need to be multiplied by (1 + each box_weight)
         # note: nodes store the state
 
-        box_dists = []
+        box_distances = []
         targets = self.goals[:]
         dist_target = 0
         # For each box in the node state
         boxes = node.state.boxes[:]
         weights = self.weights[:]
-        # Sort boxes so that the most weighted boxes get assigned the closest targets first
+        # Sort boxes such that the most weighted boxes get assigned the closest targets first
         weights, boxes = (list(t) for t in zip(*sorted(zip(weights, boxes))))
         weights.reverse()
         boxes.reverse()
@@ -602,7 +598,7 @@ class SokobanPuzzle(search.Problem):
             # Calculate manhattan distance from worker to box 
             distance_box = manhattan_dist(box, node.state.worker)
             # Store distance in box dist
-            box_dists.append(distance_box)
+            box_distances.append(distance_box)
             distance_targets = []
             # For each of the targets
             for target in targets:
@@ -617,7 +613,7 @@ class SokobanPuzzle(search.Problem):
             targets.pop(assigned_target)
 
         # Calculates the average distance to each box
-        max_distance_box = np.array(box_dists).mean()
+        max_distance_box = np.array(box_distances).mean()
         
         total_h = max_distance_box + dist_target
 
@@ -670,9 +666,6 @@ def check_elem_action_seq(warehouse, action_seq):
     '''
     assert isinstance(warehouse, Warehouse)
 
-    # Constructs a copy of the warehouse for alteration
-    new_warehouse = warehouse.copy() 
-
     # Construct problem
     problem = SokobanPuzzle(warehouse.nrows, warehouse.ncols, State(warehouse.worker, warehouse.boxes),
                             warehouse.walls, warehouse.targets, warehouse.weights)
@@ -687,8 +680,8 @@ def check_elem_action_seq(warehouse, action_seq):
         # Updates the current state with the result of the action
         current_state = problem.result(current_state, action)
     # Updates the warehouse copy with the surrent state of the worker and boxes
-    new_warehouse.worker = current_state.worker[:]
-    new_warehouse.boxes = current_state.boxes[:]
+    warehouse.worker = current_state.worker[:]
+    warehouse.boxes = current_state.boxes[:]
     return str(warehouse)
     
 
@@ -919,17 +912,63 @@ def test_h():
         print('But, received ');print(answer)
 
 def test_solve_weighted_sokoban():
+    answer = []
+    expected_answer = []
+    #Test 1
     wh = Warehouse()
     wh.load_warehouse("./warehouses/warehouse_09.txt")
-    expected_answer = (['Up', 'Right', 'Right', 'Down', 'Up', 'Left', 'Left', 'Down', 'Right', 'Down', 'Right', 'Left', 'Up', 'Up', 'Right', 'Down', 'Right', 'Down', 'Down', 'Left', 'Up', 'Right', 'Up', 'Left', 'Down', 'Left', 'Up', 'Right', 'Up', 'Left'], 396)
+    expected_answer.append(396)
     t0 = time.time()
-    answer = solve_weighted_sokoban(wh)
+    result = solve_weighted_sokoban(wh)[1]
+    answer.append(result)
     t1 = time.time()
+    print('Test on warehouse 9')
+    print ("It took: ",t1-t0, ' seconds')
+
+    # Test 2
+    wh.load_warehouse("./warehouses/warehouse_47.txt")
+    expected_answer.append(179)
+    t0 = time.time()
+    result = solve_weighted_sokoban(wh)[1]
+    answer.append(result)
+    t1 = time.time()
+    print('Test on warehouse 47')
+    print ("It took: ",t1-t0, ' seconds')
+
+    # Test 3
+    wh.load_warehouse("./warehouses/warehouse_81.txt")
+    expected_answer.append(376)
+    t0 = time.time()
+    result = solve_weighted_sokoban(wh)[1]
+    answer.append(result)
+    t1 = time.time()
+    print('Test on warehouse 81')
+    print ("It took: ",t1-t0, ' seconds')
+
+#    # Test 4 To slow
+#    wh.load_warehouse("./warehouses/warehouse_5n.txt")
+#    expected_answer.append(None)
+#    t0 = time.time()
+#    result = solve_weighted_sokoban(wh)[1]
+#    answer.append(result)
+#    t1 = time.time()
+#    print('Test on warehouse 9')
+#    print ("It took: ",t1-t0, ' seconds')
+#
+    # Test 5 - Takes too long
+#    wh.load_warehouse("./warehouses/warehouse_137.txt")
+#    expected_answer.append(521)
+#    t0 = time.time()
+#    answer.append(solve_weighted_sokoban(wh))
+#    t1 = time.time()
+#    print('Test on warehouse 9')
+#    print ("It took: ",t1-t0, ' seconds')
+
+
     fcn = solve_weighted_sokoban
     print('<<  Testing {} >>'.format(fcn.__name__))
     if answer==expected_answer:
         print(fcn.__name__, ' passed!  :-)\n')
-        print ("It took: ",t1-t0, ' seconds')
     else:
         print(fcn.__name__, ' failed!  :-(\n')
         print('Expected ');print(expected_answer)
