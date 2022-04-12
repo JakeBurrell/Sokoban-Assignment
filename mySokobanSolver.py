@@ -367,7 +367,6 @@ class SokobanPuzzle(search.Problem):
             An action or movement of the worker in the form of a string of ['Up', 'Down', 'Left', 'Right']
         '''
 
-        #TODO: Decide if this should include a check for taboo cells, might be best just to treat taboo cells as walls
 
         assert isinstance(state, State)
 
@@ -475,7 +474,74 @@ class SokobanPuzzle(search.Problem):
                 return True 
         return False
 
+    def goal_test(self, state: State):
+        """
+        Return True if the state is in a goal state for this particular sokoban problem.
+        """
+        assert np.isinstance(state, State)
+        for box in state.boxes:
+            if box not in self.goals:
+                return False
+        return True
 
+
+    def path_cost(self, c, state1, action, state2 ):
+        """Return the cost of a solution path that arrives at state2 from
+        state1 via action, assuming cost c to get up to state1. If the problem
+        is such that the path doesn't matter, this function will only look at
+        state2.  If the path does matter, it will consider c and maybe state1
+        and action. The default method costs 1 for every step in the path."""
+        raise NotImplementedError
+
+    def h(self, node: search.Node):
+        '''
+        Heuristic for goal state for the sokoban puzzle
+        '''
+        # Thinking this will be the average manhattan distance too all the boxes from the workers position
+        # Plus the manhattan distance from each box to their closest target obviously excluding targets 
+        # once assigned a box each of these values will also need to be multiplied by (1 + each box_weight)
+        # note: nodes store the state
+
+        box_dist = []
+        targets = self.goals[:]
+        dist_target = 0
+        # For each box in the node state
+        for box_num, box in enumerate(node.state.boxes):
+            # Calculate manhattan  distance and store in box_dist array
+            distance_box = manhattan_dist(box, node.state.worker)
+            box_dist.append(distance_box)
+            distance_targets = []
+            # For each of the targets
+            for target in targets:
+                # Calculate distance and store in dist_target array
+                distance = manhattan_dist(target, box)
+                distance_targets.append(distance)
+            # Determine which target has been assigned
+            assigned_target = np.argmin(distance_targets)
+            # Add the distance from box to closest target
+            dist_target += (np.amin(distance_targets) * (1 + self.weights[box_num]))
+            # Removes target from targets as it has already been assignment a box
+            targets.pop(assigned_target)
+        avg_distance_box = np.array(box_dist).mean()
+        
+        total_h = avg_distance_box + dist_target
+
+        return total_h
+
+
+    def value(self, state):
+        """For optimization problems, each state has a value.  Hill-climbing
+        and related algorithms try to maximize this value."""
+
+        # Thinking this would be the manhattan distance of worker from the initial state
+        raise NotImplementedError
+
+
+def manhattan_dist(pos_one: tuple, pos_two: tuple):
+    assert type(pos_one) == type(pos_two)
+    assert isinstance(pos_two, tuple)
+
+    return abs(pos_one[0] - pos_two[0]) + abs(pos_one[1] - pos_two[1])
         
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -547,8 +613,9 @@ def solve_weighted_sokoban(warehouse):
             C is the total cost of the action sequence C
 
     '''
-    print("not Implemented") 
-    #raise NotImplementedError()
+    # Construct the problem class
+
+    raise NotImplementedError()
 
 
 
@@ -695,6 +762,40 @@ def test_results():
         print('Expected ');print(expected_answer)
         print('But, received ');print(answer)
 
+def test_check_elem_action_seq():
+    wh = Warehouse()
+    wh.load_warehouse("./warehouses/warehouse_147.txt")
+    expected_answer = "       #####\n########   #\n#*   *@  #*#\n#  ###     #\n##    #    #\n #     #####\n #  #  #    \n ## #  #    \n  #   ##    \n  #####     "
+    action_seq = ['Left', 'Left', 'Left', 'Left', 'Left', 'Left', 'Down', 'Down', 'Down', 'Right', 'Right', 'Up', 'Right', 'Down', 'Right', 'Down', 'Down', 'Left', 'Down', 'Left', 'Left', 'Up', 'Up', 'Down', 'Down', 'Right', 'Right', 'Up', 'Right', 'Up', 'Up', 'Left', 'Left', 'Left', 'Down', 'Left', 'Up', 'Up', 'Up', 'Left', 'Up', 'Right', 'Right', 'Right', 'Right', 'Right', 'Right', 'Down', 'Right', 'Right', 'Right', 'Up', 'Up', 'Left', 'Left', 'Down', 'Left', 'Left', 'Left', 'Left', 'Left', 'Left', 'Down', 'Down', 'Down', 'Right', 'Right', 'Up', 'Left','Down', 'Left', 'Up', 'Up', 'Left', 'Up', 'Right', 'Right', 'Right', 'Right', 'Right', 'Right', 'Left', 'Left', 'Left', 'Left', 'Left', 'Down','Down', 'Down', 'Down', 'Right', 'Down', 'Down', 'Right', 'Right', 'Up', 'Up', 'Right', 'Up', 'Left', 'Left', 'Left', 'Down', 'Left','Up', 'Up', 'Up', 'Left', 'Up', 'Right', 'Right', 'Right', 'Right', 'Right', 'Down', 'Right', 'Down', 'Right', 'Right', 'Up', 'Left','Right', 'Right', 'Up', 'Up', 'Left', 'Left', 'Down', 'Left', 'Left', 'Left', 'Left', 'Left', 'Left', 'Right', 'Right', 'Right', 'Right', 'Right','Right', 'Up', 'Right', 'Right', 'Down', 'Down', 'Left', 'Down', 'Left', 'Left', 'Up', 'Right', 'Right', 'Down', 'Right', 'Up', 'Left','Left', 'Up', 'Left', 'Left']
+    answer = check_elem_action_seq(wh, action_seq) 
+    fcn = check_elem_action_seq 
+    print('<<  Testing {} >>'.format(fcn.__name__))
+    if answer==expected_answer:
+        print(fcn.__name__, ' passed!  :-)\n')
+    else:
+        print(fcn.__name__, ' failed!  :-(\n')
+        print('Expected ');print(expected_answer)
+        print('But, received ');print(answer)
+
+def test_h():
+    wh = Warehouse()
+    wh.load_warehouse("./warehouses/warehouse_01.txt")
+    problem = SokobanPuzzle(wh.nrows, wh.ncols, State(wh.worker, wh.boxes),
+     wh.walls, wh.targets, wh.weights)
+    expected_answer = 5.5
+    state = State(wh.worker, wh.boxes)
+    answer = problem.h(search.Node(state)) 
+    fcn = problem.h
+    print('<<  Testing {} >>'.format(fcn.__name__))
+    if answer==expected_answer:
+        print(fcn.__name__, ' passed!  :-)\n')
+    else:
+        print(fcn.__name__, ' failed!  :-(\n')
+        print('Expected ');print(expected_answer)
+        print('But, received ');print(answer)
+
+
+
 
 if __name__ == '__main__':
     print("\n\n------------------Tests----------------- \n\n")
@@ -705,103 +806,14 @@ if __name__ == '__main__':
     test_taboo_cells()
     test_actions()
     test_results()
+    test_check_elem_action_seq()
+    test_h()
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 
 # - - - - - - - - - - - - - - - - -Code Cemetary- - - - - - - - - - - - - - - - 
-
-#class Cell:
-#    '''
-#    A cell within the warhouse
-#    '''
-#
-#    MOVES = ['up', 'down', 'left', 'right']
-#
-#    def __init__(self, pos: tuple):
-#        assert isinstance(pos, tuple)
-#        self.x = pos[0]
-#        self.y = pos[1]
-#
-#    def coordinates(self):
-#        return tuple((self.x, self.y))
-#
-#
-#
-#    def is_corner(self, warehouse: Warehouse):
-#        # Generate transforms to determine adjacent positions
-#        transform = list(permutations([0,1,-1], 2))
-#        # Remove diagonal tranforms and convert to numpy array
-#        transforms = np.array([i for i in transform if 0 in i])
-#        # Determine Adjacent cell
-#        adjacent_positions = list(map(tuple, [t + [self.x, self.y] for t in transforms]))
-#
-#        for position in adjacent_positions:
-#            if position in warehouse.walls and tuple(reversed(position)) in warehouse.walls:
-#                return True
-#        return False
-#
-#        
-#
-#
-#class Path:
-#    '''
-#    A path within the warehouse 
-#    '''
-#
-#    def __init__(self, position: Tuple):
-#        assert len(position) == 2
-#        self.steps = []
-#        self.steps.append(position) 
-#    
-#
-#class Boxes:
-#    '''
-#        Boxes within the warehouse
-#    '''
-#
-#    def __init__(self, position: Tuple, weight):
-#        self.position = position
-#        self.weight = weight
-#
-#    def moves(self, warehouse: Warehouse, taboo = []):
-#        '''
-#        Returns a list of possible possitions that could be moved to
-#        '''
-#        moves = []
-#        position = self.positionclass Cell:
-#    '''
-#    A cell within the warhouse
-#    '''
-#
-#    MOVES = ['up', 'down', 'left', 'right']
-#
-#    def __init__(self, pos: tuple):
-#        assert isinstance(pos, tuple)
-#        self.x = pos[0]
-#        self.y = pos[1]
-#
-#    def coordinates(self):
-#        return tuple((self.x, self.y))
-#
-#
-#
-#    def is_corner(self, warehouse: Warehouse):
-#        # Generate transforms to determine adjacent positions
-#        transform = list(permutations([0,1,-1], 2))
-#        # Remove diagonal tranforms and convert to numpy array
-#        transforms = np.array([i for i in transform if 0 in i])
-#        # Determine Adjacent cell
-#        adjacent_positions = list(map(tuple, [t + [self.x, self.y] for t in transforms]))
-#
-#        for position in adjacent_positions:
-#            if position in warehouse.walls and tuple(reversed(position)) in warehouse.walls:
-#                return True
-#        return False
-#
-#        
-#
 
 
 
