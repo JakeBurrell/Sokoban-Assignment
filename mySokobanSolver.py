@@ -40,7 +40,7 @@ from sokoban import Warehouse
 from itertools import permutations
 import numpy as np
 import re
-from collections import Counter
+import time
 
 
 
@@ -537,8 +537,16 @@ class SokobanPuzzle(search.Problem):
         targets = self.goals[:]
         dist_target = 0
         # For each box in the node state
-        for box_num, box in enumerate(node.state.boxes):
+        boxes = node.state.boxes[:]
+        weights = self.weights[:]
+        # Sort boxes so that the most weighted boxes get assigned the closest targets first
+        weights, boxes = (list(t) for t in zip(*sorted(zip(weights, boxes))))
+        weights.reverse()
+        boxes.reverse()
+        for box_num, box in enumerate(boxes):
             # Calculate manhattan distance and store in box_dist array
+            distance_box = manhattan_dist(box, node.state.worker)
+            box_dist.append(distance_box)
             distance_targets = []
             # For each of the targets
             for target in targets:
@@ -548,13 +556,17 @@ class SokobanPuzzle(search.Problem):
             # Determine which target has been assigned
             assigned_target = np.argmin(distance_targets)
             # Add the distance from box to closest target
-            dist_target += (np.amin(distance_targets) * (1 + self.weights[box_num]))
+            dist_target += (np.amin(distance_targets) * ( 1 + weights[box_num]))
             # Removes target from targets as it has already been assignment a box
             targets.pop(assigned_target)
-        
-        #total_h = avg_distance_box + dist_target
 
-        return dist_target
+        avg_distance_box = np.array(box_dist).mean()
+        
+        total_h = avg_distance_box + dist_target
+
+        return total_h
+
+
 
 
     def value(self, state):
@@ -816,13 +828,22 @@ def test_check_elem_action_seq():
         print('But, received ');print(answer)
 
 def test_h():
+    # Test 1
     wh = Warehouse()
     wh.load_warehouse("./warehouses/warehouse_01.txt")
     problem = SokobanPuzzle(wh.nrows, wh.ncols, State(wh.worker, wh.boxes),
      wh.walls, wh.targets, wh.weights)
     expected_answer = 5.5
     state = State(wh.worker, wh.boxes)
-    answer = problem.h(search.Node(state)) 
+    answer = []
+    answer.append(problem.h(search.Node(state)) )
+
+    # Test 2
+    wh.load_warehouse("./warehouses/warehouse_8a.txt")
+    problem = SokobanPuzzle(wh.nrows, wh.ncols, State(wh.worker, wh.boxes),
+     wh.walls, wh.targets, wh.weights)
+    state = State(wh.worker, wh.boxes)
+    answer.append(problem.h(search.Node(state)) )
     fcn = problem.h
     print('<<  Testing {} >>'.format(fcn.__name__))
     if answer==expected_answer:
@@ -836,11 +857,14 @@ def test_solve_weighted_sokoban():
     wh = Warehouse()
     wh.load_warehouse("./warehouses/warehouse_09.txt")
     expected_answer = (['Up', 'Right', 'Right', 'Down', 'Up', 'Left', 'Left', 'Down', 'Right', 'Down', 'Right', 'Left', 'Up', 'Up', 'Right', 'Down', 'Right', 'Down', 'Down', 'Left', 'Up', 'Right', 'Up', 'Left', 'Down', 'Left', 'Up', 'Right', 'Up', 'Left'], 396)
+    t0 = time.time()
     answer = solve_weighted_sokoban(wh)
+    t1 = time.time()
     fcn = solve_weighted_sokoban
     print('<<  Testing {} >>'.format(fcn.__name__))
     if answer==expected_answer:
         print(fcn.__name__, ' passed!  :-)\n')
+        print ("It took: ",t1-t0, ' seconds')
     else:
         print(fcn.__name__, ' failed!  :-(\n')
         print('Expected ');print(expected_answer)
@@ -883,8 +907,6 @@ if __name__ == '__main__':
 #        # For each box in the node state
 #        for box_num, box in enumerate(node.state.boxes):
 #            # Calculate manhattan distance and store in box_dist array
-#            distance_box = manhattan_dist(box, node.state.worker)
-#            box_dist.append(distance_box)
 #            distance_targets = []
 #            # For each of the targets
 #            for target in targets:
@@ -897,8 +919,8 @@ if __name__ == '__main__':
 #            dist_target += (np.amin(distance_targets) * (1 + self.weights[box_num]))
 #            # Removes target from targets as it has already been assignment a box
 #            targets.pop(assigned_target)
-#        avg_distance_box = np.array(box_dist).mean()
 #        
-#        total_h = avg_distance_box + dist_target
+#        #total_h = avg_distance_box + dist_target
 #
-#        return total_h
+#        return dist_target
+#
