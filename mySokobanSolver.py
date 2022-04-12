@@ -283,6 +283,14 @@ class State:
 
         return tuple(new_pos)
 
+    def copy(self):
+        '''
+        Returns a clone of this state
+        '''
+        clone = State(self.worker[:], self.boxes[:])
+        return clone
+
+
     def movement(self, action: str):
         '''
         Changes workers position in particular direction
@@ -326,10 +334,10 @@ class SokobanPuzzle(search.Problem):
         @param ncols: the number of columns in puzzle
 
         @param state: the state of the particular puzzle
+        
+        @param walls: The position of the walls in the puzzle as a list of tuples
 
         @param goals: The position of the targets in the puzzle as a list of tuples
-
-        @param walls: The position of the walls in the puzzle as a list of tuples
         
         @param weights: The weights of each of the boxes
         '''
@@ -363,7 +371,8 @@ class SokobanPuzzle(search.Problem):
 
         assert isinstance(state, State)
 
-        new_box_pos = State.step(box, action)
+        box_num = state.boxes.index(box)
+        new_box_pos = State.step(state.boxes[box_num], action)
         if new_box_pos not in self.walls and new_box_pos not in state.boxes:
             return True
         else:
@@ -389,13 +398,20 @@ class SokobanPuzzle(search.Problem):
         # TODO: Complete and test this function
 
         assert isinstance(state, State)
+        assert action in self.actions(state)
 
-        new_state = state
+        new_state = state.copy()
+
+        # Determine new worker position and change states worker position accordingly
         new_worker_pos = State.step(state.worker, action)
+        new_state.worker = new_worker_pos
+        # If new worker position is on a box
         if new_worker_pos in state.boxes:
+            # Determine which box its on
             box_num = state.boxes.index(new_worker_pos)
-            new_state.worker = new_worker_pos
+            # Change states box position accordingly
             new_state.boxes[box_num] = State.step(state.boxes[box_num], action)
+        return new_state
 
 
     def actions(self, state: State):
@@ -424,20 +440,12 @@ class SokobanPuzzle(search.Problem):
                     box_num = state.boxes.index(new_pos)
                     # If moves box check box is movable
                     new_box_pos = State.step(state.boxes[box_num], move)
-                    if self.box_moveable(new_box_pos, state, move):
+                    if self.box_moveable(state.boxes[box_num], state, move):
                         possible_actions.append(move)
-                    
-                possible_actions.append(move)
-            new_pos = state.worker
+                else:    
+                    possible_actions.append(move)
+            new_pos = state.worker[:]
         return possible_actions
-
-    
-    def check_valid_action(walls, state: State, action):
-        '''
-        Checks if an action is valid in the particular state ignoring taboo cells 
-        '''
-        #TODO: Complete this for check_elem_action_sequence already partially complete in actions
-        raise NotImplementedError
 
 
 
@@ -495,11 +503,23 @@ def check_elem_action_seq(warehouse, action_seq):
                the sequence of actions.  This must be the same string as the
                string returned by the method  Warehouse.__str__()
     '''
+    assert isinstance(warehouse, Warehouse)
 
-    ##         "INSERT YOUR CODE HERE"
+    problem = SokobanPuzzle(warehouse.nrows, warehouse.ncols, State(warehouse.worker, warehouse.boxes),
+                            warehouse.walls, warehouse.targets, warehouse.weights)
+
+    current_state = problem.initial.copy()
+
+
+    for action in action_seq:
+        if action not in problem.actions(current_state):
+            return 'Impossible'
+        current_state = problem.result(current_state, action)
     
-    raise NotImplementedError()
-
+    warehouse.worker = current_state.worker[:]
+    warehouse.boxes = current_state.boxes[:]
+    return str(warehouse)
+    
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -527,8 +547,8 @@ def solve_weighted_sokoban(warehouse):
             C is the total cost of the action sequence C
 
     '''
-    
-    raise NotImplementedError()
+    print("not Implemented") 
+    #raise NotImplementedError()
 
 
 
@@ -627,14 +647,46 @@ def test_taboo_cells():
         print('But, received ');print(answer)
 
 def test_actions():
+    # Test 1
     wh = Warehouse()
     wh.load_warehouse("./warehouses/warehouse_01.txt")
-    expected_answer = ['Up', 'Down', 'Right']
+    expected_answer = [['Up', 'Down', 'Right'], ['Right']]
     problem = SokobanPuzzle(wh.nrows, wh.ncols, State(wh.worker, wh.boxes),
-     wh.targets, wh.walls, wh.boxes)
+     wh.walls, wh.targets, wh.weights)
     checked_state = State(wh.worker, wh.boxes)
-    answer = problem.actions(checked_state)
+    answer = []
+    answer.append(problem.actions(checked_state))
+    
+    # Test 2
+    wh = Warehouse()
+    wh.load_warehouse("./warehouses/warehouse_03.txt")
+    problem = SokobanPuzzle(wh.nrows, wh.ncols, State(wh.worker, wh.boxes),
+     wh.walls, wh.targets, wh.weights)
+    checked_state = State(wh.worker, wh.boxes)
+    result = problem.actions(checked_state)
+    answer.append(result)
+
     fcn = problem.actions 
+    print('<<  Testing {} >>'.format(fcn.__name__))
+    if answer==expected_answer:
+        print(fcn.__name__, ' passed!  :-)\n')
+    else:
+        print(fcn.__name__, ' failed!  :-(\n')
+        print('Expected ');print(expected_answer)
+        print('But, received ');print(answer)
+
+def test_results():
+    wh = Warehouse()
+    wh.load_warehouse("./warehouses/warehouse_01.txt")
+    expected_state = State((3,4), [wh.boxes[0], (4,4)])
+    expected_answer = [expected_state.worker, expected_state.boxes]
+    problem = SokobanPuzzle(wh.nrows, wh.ncols, State(wh.worker, wh.boxes),
+     wh.walls, wh.targets, wh.weights)
+    checked_state = State((2,4), wh.boxes)
+    action = ACTIONS[3]
+    answer_state =  problem.result(checked_state, action )
+    answer = [answer_state.worker, answer_state.boxes]
+    fcn = problem.result 
     print('<<  Testing {} >>'.format(fcn.__name__))
     if answer==expected_answer:
         print(fcn.__name__, ' passed!  :-)\n')
@@ -652,6 +704,7 @@ if __name__ == '__main__':
     test_check_edge()
     test_taboo_cells()
     test_actions()
+    test_results()
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
