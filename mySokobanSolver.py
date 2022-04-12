@@ -911,6 +911,7 @@ def test_h():
 
 
 def test_solve_weighted_sokoban():
+    fcn = solve_weighted_sokoban
     print('<<  Testing {} >>\n'.format(fcn.__name__))
     answer = []
     expected_answer = []
@@ -945,7 +946,7 @@ def test_solve_weighted_sokoban():
     print('Test on warehouse 81')
     print ("It took: ",t1-t0, ' seconds')
 
-#    # Test 4 To slow
+#    # Test 4 Too slow
 #    wh.load_warehouse("./warehouses/warehouse_5n.txt")
 #    expected_answer.append(None)
 #    t0 = time.time()
@@ -955,7 +956,7 @@ def test_solve_weighted_sokoban():
 #    print('Test on warehouse 9')
 #    print ("It took: ",t1-t0, ' seconds')
 #
-    # Test 5 - Takes too long
+    # Test 5 - Too Slow
 #    wh.load_warehouse("./warehouses/warehouse_137.txt")
 #    expected_answer.append(521)
 #    t0 = time.time()
@@ -965,7 +966,6 @@ def test_solve_weighted_sokoban():
 #    print ("It took: ",t1-t0, ' seconds')
 
 
-    fcn = solve_weighted_sokoban
     if answer==expected_answer:
         print(fcn.__name__, ' passed!  :-)\n')
     else:
