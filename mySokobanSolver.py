@@ -40,7 +40,7 @@ from sokoban import Warehouse
 from itertools import permutations
 import numpy as np
 import re
-import heapq
+from collections import Counter
 
 
 
@@ -263,8 +263,18 @@ class State:
         self.worker = worker
         self.boxes = boxes
 
-    def __lt__(self, state):
-        return self.worker < state.worker
+    def __lt__(self, other):
+        return self.worker < other.worker
+
+    def __eq__(self, other: object):
+        return isinstance(other, State) and self.__key() == other.__key()
+
+    def __key(self):
+        return str((self.worker, self.boxes))
+
+    def __hash__(self):
+        return hash(self.__key())
+
 
 
     def step(position, direction):
@@ -529,8 +539,6 @@ class SokobanPuzzle(search.Problem):
         # For each box in the node state
         for box_num, box in enumerate(node.state.boxes):
             # Calculate manhattan distance and store in box_dist array
-            distance_box = manhattan_dist(box, node.state.worker)
-            box_dist.append(distance_box)
             distance_targets = []
             # For each of the targets
             for target in targets:
@@ -543,11 +551,10 @@ class SokobanPuzzle(search.Problem):
             dist_target += (np.amin(distance_targets) * (1 + self.weights[box_num]))
             # Removes target from targets as it has already been assignment a box
             targets.pop(assigned_target)
-        avg_distance_box = np.array(box_dist).mean()
         
-        total_h = avg_distance_box + dist_target
+        #total_h = avg_distance_box + dist_target
 
-        return total_h
+        return dist_target
 
 
     def value(self, state):
@@ -828,7 +835,7 @@ def test_h():
 def test_solve_weighted_sokoban():
     wh = Warehouse()
     wh.load_warehouse("./warehouses/warehouse_09.txt")
-    expected_answer = 5.5
+    expected_answer = (['Up', 'Right', 'Right', 'Down', 'Up', 'Left', 'Left', 'Down', 'Right', 'Down', 'Right', 'Left', 'Up', 'Up', 'Right', 'Down', 'Right', 'Down', 'Down', 'Left', 'Up', 'Right', 'Up', 'Left', 'Down', 'Left', 'Up', 'Right', 'Up', 'Left'], 396)
     answer = solve_weighted_sokoban(wh)
     fcn = solve_weighted_sokoban
     print('<<  Testing {} >>'.format(fcn.__name__))
@@ -861,4 +868,37 @@ if __name__ == '__main__':
 # - - - - - - - - - - - - - - - - -Code Cemetary- - - - - - - - - - - - - - - - 
 
 
-
+#    def h(self, node: search.Node):
+#        '''
+#        Heuristic for goal state for the sokoban puzzle
+#        '''
+#        # Thinking this will be the average manhattan distance too all the boxes from the workers position
+#        # Plus the manhattan distance from each box to their closest target obviously excluding targets 
+#        # once assigned a box each of these values will also need to be multiplied by (1 + each box_weight)
+#        # note: nodes store the state
+#
+#        box_dist = []
+#        targets = self.goals[:]
+#        dist_target = 0
+#        # For each box in the node state
+#        for box_num, box in enumerate(node.state.boxes):
+#            # Calculate manhattan distance and store in box_dist array
+#            distance_box = manhattan_dist(box, node.state.worker)
+#            box_dist.append(distance_box)
+#            distance_targets = []
+#            # For each of the targets
+#            for target in targets:
+#                # Calculate distance and store in dist_target array
+#                distance = manhattan_dist(target, box)
+#                distance_targets.append(distance)
+#            # Determine which target has been assigned
+#            assigned_target = np.argmin(distance_targets)
+#            # Add the distance from box to closest target
+#            dist_target += (np.amin(distance_targets) * (1 + self.weights[box_num]))
+#            # Removes target from targets as it has already been assignment a box
+#            targets.pop(assigned_target)
+#        avg_distance_box = np.array(box_dist).mean()
+#        
+#        total_h = avg_distance_box + dist_target
+#
+#        return total_h
