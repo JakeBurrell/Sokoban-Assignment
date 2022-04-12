@@ -665,7 +665,10 @@ def solve_weighted_sokoban(warehouse: Warehouse):
 
     solution_node = search.astar_graph_search(problem)
 
-    return solution_node.solution(), solution_node.path_cost
+    if solution_node == None:
+        return "Impossible", None
+    else:
+        return solution_node.solution(), solution_node.path_cost
 
 
 
@@ -890,37 +893,3 @@ if __name__ == '__main__':
 
 
 # - - - - - - - - - - - - - - - - -Code Cemetary- - - - - - - - - - - - - - - - 
-
-
-#    def h(self, node: search.Node):
-#        '''
-#        Heuristic for goal state for the sokoban puzzle
-#        '''
-#        # Thinking this will be the average manhattan distance too all the boxes from the workers position
-#        # Plus the manhattan distance from each box to their closest target obviously excluding targets 
-#        # once assigned a box each of these values will also need to be multiplied by (1 + each box_weight)
-#        # note: nodes store the state
-#
-#        box_dist = []
-#        targets = self.goals[:]
-#        dist_target = 0
-#        # For each box in the node state
-#        for box_num, box in enumerate(node.state.boxes):
-#            # Calculate manhattan distance and store in box_dist array
-#            distance_targets = []
-#            # For each of the targets
-#            for target in targets:
-#                # Calculate distance and store in dist_target array
-#                distance = manhattan_dist(target, box)
-#                distance_targets.append(distance)
-#            # Determine which target has been assigned
-#            assigned_target = np.argmin(distance_targets)
-#            # Add the distance from box to closest target
-#            dist_target += (np.amin(distance_targets) * (1 + self.weights[box_num]))
-#            # Removes target from targets as it has already been assignment a box
-#            targets.pop(assigned_target)
-#        
-#        #total_h = avg_distance_box + dist_target
-#
-#        return dist_target
-#
