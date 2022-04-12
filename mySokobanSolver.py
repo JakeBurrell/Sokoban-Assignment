@@ -91,6 +91,7 @@ def taboo_cells(warehouse):
 
     return construct_taboo_string(warehouse, taboo)
 
+
 def calculate_taboo_cells(interior, warehouse):
     '''
     Determins a the set of cells that would be considered taboo within a sokoban problem
@@ -325,7 +326,7 @@ class SokobanPuzzle(search.Problem):
     #
     #     You are allowed (and encouraged) to use auxiliary functions and classes
 
-    def __init__(self, nrows, ncols, initial_state: State, walls, goals, weights):
+    def __init__(self, nrows, ncols, initial_state: State, walls, goals, weights, taboo_cells = None):
         '''
         Initializes the the sokoban puzzle
 
@@ -340,6 +341,8 @@ class SokobanPuzzle(search.Problem):
         @param goals: The position of the targets in the puzzle as a list of tuples
         
         @param weights: The weights of each of the boxes
+
+        @param taboo_cells: Taboo cells if one wishes for them to be considered
         '''
 
         assert isinstance(initial_state, State)
@@ -350,6 +353,7 @@ class SokobanPuzzle(search.Problem):
         self.goals = goals
         self.walls = walls
         self.weights = weights
+        self.taboo_cells = taboo_cells
 
     def box_moveable(self, box, state, action):
         '''
@@ -373,9 +377,10 @@ class SokobanPuzzle(search.Problem):
         box_num = state.boxes.index(box)
         new_box_pos = State.step(state.boxes[box_num], action)
         if new_box_pos not in self.walls and new_box_pos not in state.boxes:
+            if self.taboo_cells != None and new_box_pos in self.taboo_cells:
+                return False
             return True
-        else:
-            return False
+        return False
 
     
     def result(self, state : State, action):
@@ -394,7 +399,6 @@ class SokobanPuzzle(search.Problem):
             The state that results from the action 
         '''
 
-        # TODO: Complete and test this function
 
         assert isinstance(state, State)
         assert action in self.actions(state)
@@ -485,13 +489,26 @@ class SokobanPuzzle(search.Problem):
         return True
 
 
-    def path_cost(self, c, state1, action, state2 ):
+    def path_cost(self, c, state1: State, action, state2: State ):
         """Return the cost of a solution path that arrives at state2 from
         state1 via action, assuming cost c to get up to state1. If the problem
         is such that the path doesn't matter, this function will only look at
         state2.  If the path does matter, it will consider c and maybe state1
         and action. The default method costs 1 for every step in the path."""
-        raise NotImplementedError
+        
+        # Manhatton distance from workers state1 position to their state2 position
+        worker_init = state1.worker
+        worker_fin = state2.worker
+        worker_cost = manhattan_dist(worker_init, worker_fin)
+        box_cost = 0
+        for box_num, box in enumerate(state1.boxes):
+            box_weight = self.weights[box_num]
+            if box != state2.boxes[box_num] and box_weight != 0:
+                box_dist = manhattan_dist(box, state2.boxes[box_num])
+                box_cost += box_dist * box_weight
+        
+        return worker_cost + box_cost + c
+
 
     def h(self, node: search.Node):
         '''
@@ -507,7 +524,7 @@ class SokobanPuzzle(search.Problem):
         dist_target = 0
         # For each box in the node state
         for box_num, box in enumerate(node.state.boxes):
-            # Calculate manhattan  distance and store in box_dist array
+            # Calculate manhattan distance and store in box_dist array
             distance_box = manhattan_dist(box, node.state.worker)
             box_dist.append(distance_box)
             distance_targets = []
@@ -589,7 +606,7 @@ def check_elem_action_seq(warehouse, action_seq):
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-def solve_weighted_sokoban(warehouse):
+def solve_weighted_sokoban(warehouse: Warehouse):
     '''
     This function analyses the given warehouse.
     It returns the two items. The first item is an action sequence solution. 
@@ -613,9 +630,19 @@ def solve_weighted_sokoban(warehouse):
             C is the total cost of the action sequence C
 
     '''
-    # Construct the problem class
+    # Determine warehouse interior
+    interior = get_warehouse_interior(warehouse)
 
-    raise NotImplementedError()
+    # Determine taboo cells
+    taboo_cells = calculate_taboo_cells(interior, warehouse)
+
+    # Construct the problem class
+    problem = SokobanPuzzle(warehouse.nrows, warehouse.ncols, State(warehouse.worker, warehouse.boxes), 
+    warehouse.walls, warehouse.targets, warehouse.weights, taboo_cells)
+
+    solution_node = search.astar_graph_search(problem)
+
+    return solution_node.solution(), solution_node.path_cost
 
 
 
