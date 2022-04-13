@@ -323,18 +323,18 @@ class State:
         '''
         assert direction in ACTIONS
 
-        new_pos = np.array(position)
+        x,y = position
         
         if direction == ACTIONS[0]:
-            new_pos[1] -= 1
+            y -= 1
         elif direction == ACTIONS[1]:
-            new_pos[1] += 1
+            y += 1
         elif direction == ACTIONS[3]:
-            new_pos[0] += 1
+            x += 1
         elif direction == ACTIONS[2]:
-            new_pos[0] -= 1
+            x -= 1
 
-        return tuple(new_pos)
+        return (x,y)
 
     def copy(self):
         '''
@@ -797,17 +797,35 @@ def test_check_edge():
     
 def test_taboo_cells():
     wh = Warehouse()
+    answer = []
+    expected_answer = []
+    # Test 1
     wh.load_warehouse("./warehouses/warehouse_01.txt")
-    expected_answer = '####  \n#X #  \n#  ###\n#   X#\n#   X#\n#XX###\n####  '
-    answer = taboo_cells(wh)
+    expected_answer.append('####  \n#X #  \n#  ###\n#   X#\n#   X#\n#XX###\n####  ')
+    answer.append(taboo_cells(wh))
+
+
+    # Test 2
+    wh.load_warehouse("./warehouses/warehouse_47.txt")
+    expected_answer.append('  #######  \n###XXXXX#  \n#X     X#  \n#X### #####\n#X       X#\n#XXX###XXX#\n##### #####')
+    answer.append(taboo_cells(wh))
+
+
+    # Test 3
+    wh.load_warehouse("./warehouses/warehouse_53.txt")
+    expected_answer.append(' ##### \n##   ##\n#X   X#\n#X # X#\n#X   X#\n##XXX##\n ##### ')
+    answer.append(taboo_cells(wh))
+
     fcn = test_taboo_cells    
     print('<<  Testing {} >>'.format(fcn.__name__))
     if answer==expected_answer:
         print(fcn.__name__, ' passed!  :-)\n')
     else:
         print(fcn.__name__, ' failed!  :-(\n')
-        print('Expected ');print(expected_answer)
-        print('But, received ');print(answer)
+        print('Expected ')
+        for ans in expected_answer:print(ans + '\n')
+        print('But, received ')
+        for ans in answer:print(ans + "\n")
 
 def test_actions():
     # Test 1
