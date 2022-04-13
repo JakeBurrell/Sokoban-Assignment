@@ -415,8 +415,6 @@ class SokobanPuzzle(search.Problem):
             Returns True if the given box is movable in the given state by the given action
             else returns False
         '''
-
-
         assert isinstance(state, State)
 
     
@@ -445,7 +443,6 @@ class SokobanPuzzle(search.Problem):
         @return:
             The state that results from the action 
         '''
-
 
         assert isinstance(state, State)
         assert action in self.actions(state)
