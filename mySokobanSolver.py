@@ -56,7 +56,7 @@ def my_team():
     
     '''
 #    return [ (1234567, 'Ada', 'Lovelace'), (1234568, 'Grace', 'Hopper'), (1234569, 'Eva', 'Tardos') ]
-    return [ (9712291, 'Jake', 'Burrell') ]
+    return [ (9712291, 'Jake', 'Burrell'), (10113266, 'Edward', 'Duong')]
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -671,6 +671,7 @@ def check_elem_action_seq(warehouse, action_seq):
     warehouse.boxes = current_state.boxes[:]
     return str(warehouse)
     
+
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
