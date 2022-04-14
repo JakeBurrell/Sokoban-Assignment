@@ -536,10 +536,7 @@ class SokobanPuzzle(search.Problem):
         Return True if the state is in a goal state for this particular sokoban problem.
         """
         assert isinstance(state, State)
-        for box in state.boxes:
-            if box not in self.goals:
-                return False
-        return True
+        return all(box in self.goals for box in state.boxes)
 
 
     def path_cost(self, c, state1: State, action, state2: State ):
@@ -552,7 +549,7 @@ class SokobanPuzzle(search.Problem):
         # Manhatton distance from workers state1 position to their state2 position
         worker_init = state1.worker
         worker_fin = state2.worker
-        # Calculates cost incurred by worker to get from state1 to state2
+        # Calculates cost incurred by worker to get for state1 to state2
         worker_cost = manhattan_dist(worker_init, worker_fin)
         box_cost = 0
         # For each box
