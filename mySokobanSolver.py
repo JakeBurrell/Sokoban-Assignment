@@ -255,7 +255,7 @@ def get_warehouse_interior(warehouse: Warehouse):
         worker = frontier.pop(0)
         explored.add(worker)
         for move in ACTIONS:
-            pos = State.step(worker, move)
+            pos = step(worker, move)
             if pos not in warehouse.walls:
                 if (pos not in explored and worker not in frontier):
                     frontier.append(pos)
@@ -268,6 +268,8 @@ def get_warehouse_interior(warehouse: Warehouse):
 Actions that can be made by a worker
 '''
 ACTIONS = ['Up', 'Down', 'Left', 'Right']
+
+STEPS = {'Up': [0,1], 'Down': [0,-1], 'Left': [-1,0], 'Right': [1,0]}
 
 class State:
     '''
@@ -304,38 +306,6 @@ class State:
         '''
         return hash(self.__key())
 
-
-    def step(position, direction):
-
-        '''
-        Determins the change in position that would result from a step in a
-        particular direction
-
-        @param position:
-            A position from which a step will be made in the form of tuple (x,y)
-
-        @param direction:
-            A direction or ACTION to move, an element of the ACTIONS array
-        
-        @return
-            The new position resultant from the action as a tuple (x,y)
-
-        '''
-        assert direction in ACTIONS
-
-        x,y = position
-        
-        if direction == ACTIONS[0]:
-            y -= 1
-        elif direction == ACTIONS[1]:
-            y += 1
-        elif direction == ACTIONS[3]:
-            x += 1
-        elif direction == ACTIONS[2]:
-            x -= 1
-
-        return (x,y)
-
     def copy(self):
         '''
         Returns a clone of this state
@@ -348,9 +318,39 @@ class State:
         '''
         Changes workers position in particular direction
         '''
-        self.worker = State.step(self.worker, action)
+        self.worker = step(self.worker, action)
 
 
+def step(position, direction):
+
+    '''
+    Determins the change in position that would result from a step in a
+    particular direction
+
+    @param position:
+        A position from which a step will be made in the form of tuple (x,y)
+
+    @param direction:
+        A direction or ACTION to move, an element of the ACTIONS array
+    
+    @return
+        The new position resultant from the action as a tuple (x,y)
+
+    '''
+    assert direction in ACTIONS
+
+    x,y = position
+    
+    if direction == ACTIONS[0]:
+        y -= 1
+    elif direction == ACTIONS[1]:
+        y += 1
+    elif direction == ACTIONS[3]:
+        x += 1
+    elif direction == ACTIONS[2]:
+        x -= 1
+
+    return (x,y)
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -388,6 +388,11 @@ class SokobanPuzzle(search.Problem):
         '''
         assert isinstance(initial_state, State)
 
+        # Sorts boxes such that the most weighted boxes appear first for benifit of the heuristic
+        weights, initial_state.boxes = (list(weight_box) for weight_box in zip(*sorted(zip(weights, initial_state.boxes))))
+        weights.reverse()
+        initial_state.boxes.reverse()
+
         self.nrows = nrows
         self.ncols = ncols
         self.initial = initial_state
@@ -415,10 +420,10 @@ class SokobanPuzzle(search.Problem):
             Returns True if the given box is movable in the given state by the given action
             else returns False
         '''
-        assert isinstance(state, State)
+        #assert isinstance(state, State)
 
     
-        new_box_pos = State.step(state.boxes[box_num], action)
+        new_box_pos = step(state.boxes[box_num], action)
         # If new box position is not a wall and not a box
         if new_box_pos not in self.walls and new_box_pos not in state.boxes:
             # Checks if taboo cells are provided and tests if the new box position is in them
@@ -450,14 +455,14 @@ class SokobanPuzzle(search.Problem):
         new_state = state.copy()
 
         # Determine new worker position and change states worker position accordingly
-        new_worker_pos = State.step(state.worker, action)
+        new_worker_pos = step(state.worker, action)
         new_state.worker = new_worker_pos
         # If new worker position is on a box
         if new_worker_pos in state.boxes:
             # Determine which box its on
             box_num = state.boxes.index(new_worker_pos)
             # Change states box position accordingly
-            new_state.boxes[box_num] = State.step(state.boxes[box_num], action)
+            new_state.boxes[box_num] = step(state.boxes[box_num], action)
         return new_state
 
 
@@ -480,7 +485,7 @@ class SokobanPuzzle(search.Problem):
         possible_actions = []
         # For each allowable ACTION
         for move in ACTIONS:
-            new_pos = State.step(state.worker, move)
+            new_pos = step(state.worker, move)
             # Checks new position not in walls
             if new_pos not in self.walls:
                 # Checks to see if new pos moves box
@@ -512,7 +517,7 @@ class SokobanPuzzle(search.Problem):
         @return:
             True if and only if the position represents a corner else returns False
         '''
-        assert isinstance(position, tuple or list) and isinstance(walls, list)
+        #assert isinstance(position, tuple or list) and isinstance(walls, list)
 
         # Transforms to determine adjacent cells
         transforms = np.array([(-1, 0), (0,-1), (1, 0), (0, 1)])
@@ -547,7 +552,7 @@ class SokobanPuzzle(search.Problem):
         # Manhatton distance from workers state1 position to their state2 position
         worker_init = state1.worker
         worker_fin = state2.worker
-        # Calculates cost incurred by worker to get fro state1 to state2
+        # Calculates cost incurred by worker to get from state1 to state2
         worker_cost = manhattan_dist(worker_init, worker_fin)
         box_cost = 0
         # For each box
@@ -561,43 +566,44 @@ class SokobanPuzzle(search.Problem):
 
         return worker_cost + box_cost + c
 
-
+    
     def h(self, node: search.Node):
         '''
-        Heuristic for goal state for the sokoban puzzle
-        '''
-        # Thinking this will be the average manhattan distance too all the boxes from the workers position
-        # Plus the manhattan distance from each box to their closest target obviously excluding targets 
-        # once assigned a box each of these values will also need to be multiplied by (1 + each box_weight)
-        # note: nodes store the state
+        Heuristic value to get to the goal state of for the sokoban puzzle
 
+        Returns the average manhattan distance to all the boxes from the workers position. 
+        Plus the manhattan distance multiplied by worker weight + box weight for each box 
+        to their closest available targets. Note boxes are pre storted such that heaviest 
+        weighted boxes get assigned targets first and targets are excluded from being assigned to other boxes.
+
+        @param node:
+            A search node within the sokoban puzzle
+        '''
+        worker_weight = 1
         box_distances = []
-        targets = self.goals[:]
         dist_target = 0
+
+        # Get copy of targets
+        targets_left = self.goals[:]
+
         # For each box in the node state
-        boxes = node.state.boxes[:]
-        weights = self.weights[:]
-        # Sort boxes such that the most weighted boxes get assigned the closest targets first
-        weights, boxes = (list(t) for t in zip(*sorted(zip(weights, boxes))))
-        weights.reverse()
-        boxes.reverse()
-        for box_num, box in enumerate(boxes):
+        for box_num, box in enumerate(node.state.boxes):
             # Calculate manhattan distance from worker to box 
             distance_box = manhattan_dist(box, node.state.worker)
             # Store distance in box dist
             box_distances.append(distance_box)
             distance_targets = []
             # For each of the targets
-            for target in targets:
+            for target in targets_left:
                 # Calculate distance and store in dist_target array
                 distance = manhattan_dist(target, box)
                 distance_targets.append(distance)
             # Determine which target has been assigned
             assigned_target = np.argmin(distance_targets)
-            # Add the distance from box to closest target
-            dist_target += (np.amin(distance_targets) * ( 1 + weights[box_num]))
+            # Add the distance from box to closest target including weight of box
+            dist_target += (np.amin(distance_targets) * ( worker_weight + self.weights[box_num]))
             # Removes target from targets as it has already been assignment a box
-            targets.pop(assigned_target)
+            targets_left.pop(assigned_target)
 
         # Calculates the average distance to each box
         max_distance_box = np.array(box_distances).mean()
@@ -606,9 +612,7 @@ class SokobanPuzzle(search.Problem):
 
         return total_h
 
-
-
-
+    
     def value(self, state):
         """For optimization problems, each state has a value.  Hill-climbing
         and related algorithms try to maximize this value."""
@@ -722,6 +726,8 @@ def solve_weighted_sokoban(warehouse: Warehouse):
 
 
 # - - - - - - - - - - - - - - - - - - -Tests- - - - - - - - - - - - - - - - - - 
+
+# Layout and some code taken from sanity_check.py for convenience 
 
 def test_movement():
     wh = Warehouse()
@@ -989,6 +995,29 @@ def test_solve_weighted_sokoban():
         print('Expected ');print(expected_answer)
         print('But, received ');print(answer)
 
+def test_solve_weighted_sokoban2():
+    wh = Warehouse()    
+    wh.load_warehouse( "./warehouses/warehouse_8a.txt")
+    # first test
+    t0 = time.time()
+    answer, cost = solve_weighted_sokoban(wh)
+    t1 = time.time()
+    print('Test on warehouse 8a')
+    print ("It took: ",t1-t0, ' seconds')
+    expected_answer = ['Up', 'Left', 'Up', 'Left', 'Left', 'Down', 'Left', 
+                       'Down', 'Right', 'Right', 'Right', 'Up', 'Up', 'Left', 
+                       'Down', 'Right', 'Down', 'Left', 'Left', 'Right', 
+                       'Right', 'Right', 'Right', 'Right', 'Right', 'Right'] 
+    expected_cost = 431
+    print('<<  test_solve_weighted_sokoban >>')
+    if answer==expected_answer:
+        print(' Answer as expected!  :-)\n')
+    else:
+        print('unexpected answer!  :-(\n')
+        print('Expected ');print(expected_answer)
+        print('But, received ');print(answer)
+    print(f'Your cost = {cost}, expected cost = {expected_cost}')
+
 
 
 if __name__ == '__main__':
@@ -1003,6 +1032,7 @@ if __name__ == '__main__':
     test_check_elem_action_seq()
     test_h()
     test_solve_weighted_sokoban()
+    test_solve_weighted_sokoban2()
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
