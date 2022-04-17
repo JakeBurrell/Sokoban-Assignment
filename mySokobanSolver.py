@@ -450,7 +450,8 @@ class SokobanPuzzle(search.Problem):
         '''
 
         assert isinstance(state, State)
-        assert action in self.actions(state)
+        # Slows down solver
+        #assert action in self.actions(state)
 
         new_state = state.copy()
 
@@ -517,7 +518,7 @@ class SokobanPuzzle(search.Problem):
         @return:
             True if and only if the position represents a corner else returns False
         '''
-        #assert isinstance(position, tuple or list) and isinstance(walls, list)
+        assert isinstance(position, tuple or list) and isinstance(walls, list)
 
         # Transforms to determine adjacent cells
         transforms = np.array([(-1, 0), (0,-1), (1, 0), (0, 1)])
@@ -568,7 +569,7 @@ class SokobanPuzzle(search.Problem):
         '''
         Heuristic value to get to the goal state of for the sokoban puzzle
 
-        Returns the average manhattan distance to all the boxes from the workers position. 
+        Returns the max manhattan distance to all the boxes from the workers position. 
         Plus the manhattan distance multiplied by worker weight + box weight for each box 
         to their closest available targets. Note boxes are pre storted such that heaviest 
         weighted boxes get assigned targets first and targets are excluded from being assigned to other boxes.
@@ -576,6 +577,7 @@ class SokobanPuzzle(search.Problem):
         @param node:
             A search node within the sokoban puzzle
         '''
+
         worker_weight = 1
         box_distances = []
         dist_target = 0
@@ -598,12 +600,12 @@ class SokobanPuzzle(search.Problem):
             # Determine which target has been assigned
             assigned_target = np.argmin(distance_targets)
             # Add the distance from box to closest target including weight of box
-            dist_target += (np.amin(distance_targets) * ( worker_weight + self.weights[box_num]))
+            dist_target += (min(distance_targets) * ( worker_weight + self.weights[box_num]))
             # Removes target from targets as it has already been assignment a box
             targets_left.pop(assigned_target)
 
-        # Calculates the average distance to each box
-        max_distance_box = np.array(box_distances).mean()
+        # Calculates the max distance to each box
+        max_distance_box = max(box_distances)
         
         total_h = max_distance_box + dist_target
 
@@ -901,7 +903,7 @@ def test_h():
     problem = SokobanPuzzle(wh.nrows, wh.ncols, State(wh.worker, wh.boxes),
      wh.walls, wh.targets, wh.weights)
     # Actual costs [33, 396, 431] >= h  enure
-    expected_answer = [7.5, 285.5, 421.0]
+    expected_answer = [6, 194, 218]
     state = State(wh.worker, wh.boxes)
     answer = []
     answer.append(problem.h(search.Node(state)) )
