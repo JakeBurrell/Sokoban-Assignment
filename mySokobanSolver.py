@@ -609,9 +609,9 @@ class SokobanPuzzle(search.Problem):
             targets_left.pop(assigned_target)
 
         # Calculates the mean distance to each box
-        max_distance_box = min(box_distances)
+        mean_distance_box = sum(box_distances)/ len(box_distances)
         
-        total_h = math.floor(max_distance_box) + dist_target
+        total_h = (mean_distance_box) + dist_target
 
         return total_h
 
@@ -921,6 +921,7 @@ def test_h_consistency():
         prev_h = current_h
         prev_state = current_state.copy()
 
+    print('\n<<  Testing {} consistency >>'.format(fcn.__name__))
     if passed:
         print(fcn.__name__, ' consistency check passed!  :-)\n')
     else:
