@@ -42,6 +42,7 @@ from itertools import permutations
 import numpy as np
 import re
 import time
+import math
 
 
 
@@ -569,13 +570,16 @@ class SokobanPuzzle(search.Problem):
         '''
         Heuristic value to get to the goal state of for the sokoban puzzle
 
-        Returns the max manhattan distance to all the boxes from the workers position. 
-        Plus the manhattan distance multiplied by worker weight + box weight for each box 
-        to their closest available targets. Note boxes are pre storted such that heaviest 
-        weighted boxes get assigned targets first and targets are excluded from being assigned to other boxes.
 
         @param node:
             A search node within the sokoban puzzle
+
+        @return
+            Returns the mean manhattan distance to all the boxes from the workers position. 
+            Plus the manhattan distance multiplied by worker weight + box weight for each box 
+            to their closest available targets. Note boxes are pre storted such that heaviest 
+            weighted boxes get assigned targets first and targets are excluded from being assigned
+            to other boxes.
         '''
 
         worker_weight = 1
@@ -604,10 +608,10 @@ class SokobanPuzzle(search.Problem):
             # Removes target from targets as it has already been assignment a box
             targets_left.pop(assigned_target)
 
-        # Calculates the max distance to each box
-        max_distance_box = max(box_distances)
+        # Calculates the mean distance to each box
+        max_distance_box = min(box_distances)
         
-        total_h = max_distance_box + dist_target
+        total_h = math.floor(max_distance_box) + dist_target
 
         return total_h
 
@@ -896,6 +900,33 @@ def test_check_elem_action_seq():
         print('Expected ');print(expected_answer)
         print('But, received ');print(answer)
 
+def test_h_consistency():
+    wh = Warehouse()
+    wh.load_warehouse("./warehouses/warehouse_147.txt")
+    action_seq = ['Left', 'Left', 'Left', 'Left', 'Left', 'Left', 'Down', 'Down', 'Down', 'Right', 'Right', 'Up', 'Right', 'Down', 'Right', 'Down', 'Down', 'Left', 'Down', 'Left', 'Left', 'Up', 'Up', 'Down', 'Down', 'Right', 'Right', 'Up', 'Right', 'Up', 'Up', 'Left', 'Left', 'Left', 'Down', 'Left', 'Up', 'Up', 'Up', 'Left', 'Up', 'Right', 'Right', 'Right', 'Right', 'Right', 'Right', 'Down', 'Right', 'Right', 'Right', 'Up', 'Up', 'Left', 'Left', 'Down', 'Left', 'Left', 'Left', 'Left', 'Left', 'Left', 'Down', 'Down', 'Down', 'Right', 'Right', 'Up', 'Left','Down', 'Left', 'Up', 'Up', 'Left', 'Up', 'Right', 'Right', 'Right', 'Right', 'Right', 'Right', 'Left', 'Left', 'Left', 'Left', 'Left', 'Down','Down', 'Down', 'Down', 'Right', 'Down', 'Down', 'Right', 'Right', 'Up', 'Up', 'Right', 'Up', 'Left', 'Left', 'Left', 'Down', 'Left','Up', 'Up', 'Up', 'Left', 'Up', 'Right', 'Right', 'Right', 'Right', 'Right', 'Down', 'Right', 'Down', 'Right', 'Right', 'Up', 'Left','Right', 'Right', 'Up', 'Up', 'Left', 'Left', 'Down', 'Left', 'Left', 'Left', 'Left', 'Left', 'Left', 'Right', 'Right', 'Right', 'Right', 'Right','Right', 'Up', 'Right', 'Right', 'Down', 'Down', 'Left', 'Down', 'Left', 'Left', 'Up', 'Right', 'Right', 'Down', 'Right', 'Up', 'Left','Left', 'Up', 'Left', 'Left']
+    problem = SokobanPuzzle(wh.nrows, wh.ncols, State(wh.worker, wh.boxes),
+                            wh.walls, wh.targets, wh.weights)
+    fcn = problem.h
+    passed = True
+    prev_state = problem.initial
+    prev_h =  problem.h(search.Node(prev_state))
+
+
+    for action in action_seq:
+        current_state = problem.result(prev_state, action)
+        current_h = problem.h(search.Node(current_state))
+        cost = problem.path_cost(0, prev_state, action, current_state)
+        if prev_h - current_h >  cost:
+            passed = False
+        prev_h = current_h
+        prev_state = current_state.copy()
+
+    if passed:
+        print(fcn.__name__, ' consistency check passed!  :-)\n')
+    else:
+        print(fcn.__name__, ' consistency check failed!  :-(\n')
+
+
 def test_h():
     # Test 1
     wh = Warehouse()
@@ -1030,6 +1061,7 @@ if __name__ == '__main__':
     test_results()
     test_check_elem_action_seq()
     test_h()
+    test_h_consistency()
     test_solve_weighted_sokoban()
     test_solve_weighted_sokoban2()
 
