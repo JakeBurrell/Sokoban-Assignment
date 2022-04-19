@@ -601,7 +601,7 @@ class SokobanPuzzle(search.Problem):
         # Calculates the min distance to each box
         min_distance_box = min(box_distances)
         
-        total_h = (min_distance_box) + dist_target
+        total_h = min_distance_box + dist_target
 
         return total_h
 
@@ -988,24 +988,24 @@ def test_solve_weighted_sokoban():
     print('Test on warehouse 81')
     print ("It took: ",t1-t0, ' seconds')
 
-#    # Test 4 Too slow
-#    wh.load_warehouse("./warehouses/warehouse_5n.txt")
-#    expected_answer.append(None)
-#    t0 = time.time()
-#    result = solve_weighted_sokoban(wh)[1]
-#    answer.append(result)
-#    t1 = time.time()
-#    print('Test on warehouse 9')
-#    print ("It took: ",t1-t0, ' seconds')
-#
+    # Test 4 Too slow
+    wh.load_warehouse("./warehouses/warehouse_5n.txt")
+    expected_answer.append(None)
+    t0 = time.time()
+    result = solve_weighted_sokoban(wh)[1]
+    answer.append(result)
+    t1 = time.time()
+    print('Test on warehouse 5n')
+    print ("It took: ",t1-t0, ' seconds')
+
     # Test 5 - Too Slow
-#    wh.load_warehouse("./warehouses/warehouse_137.txt")
-#    expected_answer.append(521)
-#    t0 = time.time()
-#    answer.append(solve_weighted_sokoban(wh))
-#    t1 = time.time()
-#    print('Test on warehouse 9')
-#    print ("It took: ",t1-t0, ' seconds')
+    wh.load_warehouse("./warehouses/warehouse_147.txt")
+    expected_answer.append(521)
+    t0 = time.time()
+    answer.append(solve_weighted_sokoban(wh))
+    t1 = time.time()
+    print('Test on warehouse 147')
+    print ("It took: ",t1-t0, ' seconds')
 
 
     if answer==expected_answer:
