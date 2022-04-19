@@ -389,11 +389,6 @@ class SokobanPuzzle(search.Problem):
         '''
         assert isinstance(initial_state, State)
 
-        # Sorts boxes such that the most weighted boxes appear first for benifit of the heuristic
-        weights, initial_state.boxes = (list(weight_box) for weight_box in zip(*sorted(zip(weights, initial_state.boxes))))
-        weights.reverse()
-        initial_state.boxes.reverse()
-
         self.nrows = nrows
         self.ncols = ncols
         self.initial = initial_state
@@ -575,11 +570,9 @@ class SokobanPuzzle(search.Problem):
             A search node within the sokoban puzzle
 
         @return
-            Returns the mean manhattan distance to all the boxes from the workers position. 
+            Returns the minimum manhattan distance to all the boxes from the workers position. 
             Plus the manhattan distance multiplied by worker weight + box weight for each box 
-            to their closest available targets. Note boxes are pre storted such that heaviest 
-            weighted boxes get assigned targets first and targets are excluded from being assigned
-            to other boxes.
+            to their closest targets.
         '''
 
         worker_weight = 1
@@ -601,17 +594,14 @@ class SokobanPuzzle(search.Problem):
                 # Calculate distance and store in dist_target array
                 distance = manhattan_dist(target, box)
                 distance_targets.append(distance)
-            # Determine which target has been assigned
-            assigned_target = np.argmin(distance_targets)
             # Add the distance from box to closest target including weight of box
             dist_target += (min(distance_targets) * ( worker_weight + self.weights[box_num]))
             # Removes target from targets as it has already been assignment a box
-            targets_left.pop(assigned_target)
 
-        # Calculates the mean distance to each box
-        mean_distance_box = sum(box_distances)/ len(box_distances)
+        # Calculates the min distance to each box
+        min_distance_box = min(box_distances)
         
-        total_h = (mean_distance_box) + dist_target
+        total_h = (min_distance_box) + dist_target
 
         return total_h
 
@@ -911,12 +901,11 @@ def test_h_consistency():
     prev_state = problem.initial
     prev_h =  problem.h(search.Node(prev_state))
 
-
     for action in action_seq:
         current_state = problem.result(prev_state, action)
         current_h = problem.h(search.Node(current_state))
         cost = problem.path_cost(0, prev_state, action, current_state)
-        if prev_h - current_h >  cost:
+        if prev_h - current_h > cost:
             passed = False
         prev_h = current_h
         prev_state = current_state.copy()
@@ -935,7 +924,7 @@ def test_h():
     problem = SokobanPuzzle(wh.nrows, wh.ncols, State(wh.worker, wh.boxes),
      wh.walls, wh.targets, wh.weights)
     # Actual costs [33, 396, 431] >= h  enure
-    expected_answer = [6, 194, 218]
+    expected_answer = [4, 273, 406]
     state = State(wh.worker, wh.boxes)
     answer = []
     answer.append(problem.h(search.Node(state)) )
@@ -965,7 +954,7 @@ def test_h():
 
 def test_solve_weighted_sokoban():
     fcn = solve_weighted_sokoban
-    print('<<  Testing {} >>\n'.format(fcn.__name__))
+    print('<<  Testing {} >>'.format(fcn.__name__))
     answer = []
     expected_answer = []
     #Test 1
@@ -1041,7 +1030,7 @@ def test_solve_weighted_sokoban2():
                        'Right', 'Right', 'Right', 'Right', 'Right', 'Right'] 
     expected_cost = 431
     print('<<  test_solve_weighted_sokoban >>')
-    if answer==expected_answer:
+    if cost==expected_cost:
         print(' Answer as expected!  :-)\n')
     else:
         print('unexpected answer!  :-(\n')
