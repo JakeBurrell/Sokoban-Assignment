@@ -473,7 +473,7 @@ class SokobanPuzzle(search.Problem):
             The current State object from which to assess actions from
         
         @return:
-            A list of possible action that could be made from the provided state in the
+            A list of possible actions that could be made from the provided state in the
             form  a string of one of the folowing ['Up', 'Down', 'Left', 'Right']
         
         """
@@ -496,7 +496,6 @@ class SokobanPuzzle(search.Problem):
             # Return new_pos to original position
             new_pos = state.worker[:]
         return possible_actions
-
 
     
     def is_corner(position: tuple, walls: list):
@@ -572,7 +571,7 @@ class SokobanPuzzle(search.Problem):
 
         @return
             Returns the manhattan distance to the closest box from the workers position. 
-            Plus the manhattan distance multiplied by worker weight + box weight for each box to their closest targets.
+            Plus the manhattan distance multiplied by (worker weight + box weight) for each box to their closest targets.
         '''
 
         worker_weight = 1

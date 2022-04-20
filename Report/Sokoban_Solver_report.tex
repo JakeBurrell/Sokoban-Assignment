@@ -64,14 +64,52 @@
 \tableofcontents
 
 \section{Solver}
-
-
+% Briefly discuss how A* search algorithm has been implemented in order to solve the problem 
 \subsection{State Representation}
+% Used a class to represent the state representation
+% Container for both two properties worker and boxes both of which were tuples in the form ((x,y) 
+% Overrode methods such to make sate representation hashable to allow it to be stored in a the frontier set
+% Overrode less than method to allow it co be compared in the best first search
+
 \subsection{Heuristic}
+% Explain what the heuristic is calculating and how it is valid for the problem
+% Prove that it is admissible
+% Potentially prove that it is consistent otherwise demonstrate its consistent by discussing test of consistency
+
+\subsection{Other Classes and Methods}
+% Brief outline how puzzle class interacts with search class 
+\subsubsection{Taboo Cells}
+% Explain taboo cells function:
+    % Modified Breadth first search algorithm to determine interior cells
+    % is_corner method applied to all interior cells using transforms to calculate adjacents cells and thus determine corners
+    % Edges were found from corners and checked if entire edge was along a wall using check_edge 
+    % Corners and edges made taboo cells
+\subsubsection{SokobanPuzzle}
+% Explain SokobanPuzzle class:
+    % Discuss initial parameters noting that taboo_cells is an optional parameter
+    % Discuss functions: (Uses method docstring maybe touch on implementation )
+        % result
+        % actions
+        % goal_test
+        % path_cost
+        % box_movable mention how it checks taboo cells if they exist
 
 \section{Testing}
+% Discuss how each tests was preformed on all major methods to validate their output
+% Mention they we based off tests found in sanity_check
+% Discuss how solver tests checked timings and checked against provided solutions in the FAQ
+% Method how we used a mixture of black box white box testing
+    % I.E Some tests were done prior to completing methods 
+% Might add addition tests 
 
 \section{Performance and Limitations}
+% Discuss what problems it can complete and how long it takes
+% Generalized explaining what sort of problems it preforms quickly on and which ones it does not
+% Mention for example how it takes a long time to confirm warehouse 5n is impossible
+% Discuss why some examples seem to be significantly slower then the ones found in the FAQ
+    % Reasons for this most likely due to using a class for the state representation as opposed to a tuple of tuples
+    % Mention that class instantiation and deconstruction takes additional time as it must instantiate the class object and its nested classes, in the form of the worker and box tuples
+    % Not maybe that this does make the code look cleaner and more readable
 
 
 
