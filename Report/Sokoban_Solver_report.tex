@@ -75,15 +75,16 @@
 % Explain what the heuristic is calculating and how it is valid for the problem
 % Prove that it is admissible
 % Potentially prove that it is consistent otherwise demonstrate its consistent by discussing test of consistency
-
+% Potentially include illustration demonstrating what its calculating compared to actual cost
 \subsection{Other Classes and Methods}
 % Brief outline how puzzle class interacts with search class 
 \subsubsection{Taboo Cells}
 % Explain taboo cells function:
     % Modified Breadth first search algorithm to determine interior cells
-    % is_corner method applied to all interior cells using transforms to calculate adjacents cells and thus determine corners
+    % is_corner method applied to all interior cells using transforms to calculate adjacent cells and thus determine corners
     % Edges were found from corners and checked if entire edge was along a wall using check_edge 
     % Corners and edges made taboo cells
+% Potentially add diagram explaining what taboo cells are 
 \subsubsection{SokobanPuzzle}
 % Explain SokobanPuzzle class:
     % Discuss initial parameters noting that taboo_cells is an optional parameter
@@ -98,9 +99,10 @@
 % Discuss how each tests was preformed on all major methods to validate their output
 % Mention they we based off tests found in sanity_check
 % Discuss how solver tests checked timings and checked against provided solutions in the FAQ
-% Method how we used a mixture of black box white box testing
-    % I.E Some tests were done prior to completing methods 
-% Might add addition tests 
+% Method how we used a mixture of black box and white box testing
+    % I.E Some tests were done prior to completing methods additional tests added after completion
+% Might add addition tests
+% Potentially add table showing what was tested and too what degree 
 
 \section{Performance and Limitations}
 % Discuss what problems it can complete and how long it takes
@@ -110,6 +112,7 @@
     % Reasons for this most likely due to using a class for the state representation as opposed to a tuple of tuples
     % Mention that class instantiation and deconstruction takes additional time as it must instantiate the class object and its nested classes, in the form of the worker and box tuples
     % Not maybe that this does make the code look cleaner and more readable
+% Use table too display times for each problem
 
 
 
