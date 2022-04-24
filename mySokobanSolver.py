@@ -478,7 +478,8 @@ class SokobanPuzzle(search.Problem):
         assert isinstance(state, State)
 
         possible_actions = []
-        # For each allowable ACTION
+        # For each allowable ACTIONAU
+
         for move in ACTIONS:
             new_pos = step(state.worker, move)
             # Checks new position not in walls
@@ -626,8 +627,6 @@ def check_elem_action_seq(warehouse, action_seq):
     
     Determine if the sequence of actions listed in 'action_seq' is legal or not.
      
-  a box onto a taboo cell.
-        
     @param warehouse: a valid Warehouse object
 
     @param action_seq: a sequence of legal actions.
@@ -689,10 +688,8 @@ def solve_weighted_sokoban(warehouse: Warehouse):
             C is the total cost of the action sequence C
 
     '''
-    # Determine warehouse interior
     interior = get_warehouse_interior(warehouse)
 
-    # Determine taboo cells
     taboo_cells = calculate_taboo_cells(interior, warehouse)
 
     # Construct the problem class
