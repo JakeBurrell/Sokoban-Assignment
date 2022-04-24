@@ -270,7 +270,10 @@ Actions that can be made by a worker
 '''
 ACTIONS = ['Up', 'Down', 'Left', 'Right']
 
-STEPS = {'Up': [0,1], 'Down': [0,-1], 'Left': [-1,0], 'Right': [1,0]}
+'''
+Offset from current possition resultant from a step in a particular direction
+'''
+STEPS = {'Up': [0,-1], 'Down': [0,1], 'Left': [-1,0], 'Right': [1,0]}
 
 class State:
     '''
@@ -341,17 +344,12 @@ def step(position, direction):
     assert direction in ACTIONS
 
     x,y = position
-    
-    if direction == ACTIONS[0]: # Up
-        y -= 1
-    elif direction == ACTIONS[1]: # Down
-        y += 1
-    elif direction == ACTIONS[2]: # Left
-        x -= 1
-    elif direction == ACTIONS[3]: # Right
-        x += 1
 
-    return (x,y)
+    # Determins offset from current possition resultant from a step in a particular direction
+    x_off, y_off = STEPS[direction]
+
+    # Calculates new possition from off sets and returns possition as a tuple
+    return (x + x_off, y + y_off)
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -552,8 +550,8 @@ class SokobanPuzzle(search.Problem):
         # For each box
         for box_num, box in enumerate(state1.boxes):
             box_weight = self.weights[box_num]
-            # If there is a weight incurred by the box and a movement
-            if box != state2.boxes[box_num] and box_weight != 0:
+            # If there is a weight incurred by the box and a movement made
+            if box_weight != 0 and box != state2.boxes[box_num]:
                 # Calculate the weight incurred by the box
                 box_dist = manhattan_dist(box, state2.boxes[box_num])
                 box_cost += box_dist * box_weight
@@ -563,8 +561,7 @@ class SokobanPuzzle(search.Problem):
     
     def h(self, node: search.Node):
         '''
-        Heuristic value to get to the goal state of for the sokoban puzzle
-
+        Heuristic value to approximate weight to get to the goal state of for the sokoban puzzle
 
         @param node:
             A search node within the sokoban puzzle
@@ -584,7 +581,7 @@ class SokobanPuzzle(search.Problem):
         # For each box in the node state
         for box_num, box in enumerate(node.state.boxes):
             # Calculate manhattan distance from worker to box 
-            distance_box = manhattan_dist(box, node.state.worker)
+            distance_box = manhattan_dist(box, node.state.worker) - worker_weight
             # Store distance in box dist
             box_distances.append(distance_box)
             distance_targets = []
@@ -628,10 +625,8 @@ def check_elem_action_seq(warehouse, action_seq):
     '''
     
     Determine if the sequence of actions listed in 'action_seq' is legal or not.
-    
-    Important notes:
-      - a legal sequence of actions does not necessarily solve the puzzle.
-      - an action is legal even if it pushes a box onto a taboo cell.
+     
+  a box onto a taboo cell.
         
     @param warehouse: a valid Warehouse object
 
@@ -704,6 +699,7 @@ def solve_weighted_sokoban(warehouse: Warehouse):
     problem = SokobanPuzzle(warehouse.nrows, warehouse.ncols, State(warehouse.worker, warehouse.boxes), 
     warehouse.walls, warehouse.targets, warehouse.weights, taboo_cells)
 
+    # Gets final node from astar graph search function
     solution_node = search.astar_graph_search(problem)
 
     if solution_node == None:
