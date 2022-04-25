@@ -908,14 +908,14 @@ def test_h_consistency():
         print(fcn.__name__, ' consistency check failed!  :-(\n')
 
 
-def test_h():
+def test_h_admissibility():
     # Test 1
     wh = Warehouse()
     wh.load_warehouse("./warehouses/warehouse_01.txt")
     problem = SokobanPuzzle(wh.nrows, wh.ncols, State(wh.worker, wh.boxes),
      wh.walls, wh.targets, wh.weights)
     # Actual costs [33, 396, 431] >= h enure
-    expected_answer = [4, 273, 406]
+    expected_answer = [33, 396, 431]
     state = State(wh.worker, wh.boxes)
     answer = []
     answer.append(problem.h(search.Node(state)) )
@@ -934,8 +934,8 @@ def test_h():
     state = State(wh.worker, wh.boxes)
     answer.append(problem.h(search.Node(state)) )
     fcn = problem.h
-    print('<<  Testing {} >>'.format(fcn.__name__))
-    if answer==expected_answer:
+    print('<<  Testing {} admissibility >>'.format(fcn.__name__))
+    if all(ans <  expected_answer[index] for index, ans in enumerate(answer)):
         print(fcn.__name__, ' passed!  :-)\n')
     else:
         print(fcn.__name__, ' failed!  :-(\n')
@@ -979,15 +979,15 @@ def test_solve_weighted_sokoban():
     print('Test on warehouse 81')
     print ("It took: ",t1-t0, ' seconds')
 
-    # Test 4 Too slow
-#    wh.load_warehouse("./warehouses/warehouse_5n.txt")
-#    expected_answer.append(None)
-#    t0 = time.time()
-#    result = solve_weighted_sokoban(wh)[1]
-#    answer.append(result)
-#    t1 = time.time()
-#    print('Test on warehouse 5n')
-#    print ("It took: ",t1-t0, ' seconds')
+   # Test 4 Too slow
+    wh.load_warehouse("./warehouses/warehouse_5n.txt")
+    expected_answer.append(None)
+    t0 = time.time()
+    result = solve_weighted_sokoban(wh)[1]
+    answer.append(result)
+    t1 = time.time()
+    print('Test on warehouse 5n')
+    print ("It took: ",t1-t0, ' seconds')
 
     # Test 5 - Too Slow
 #    wh.load_warehouse("./warehouses/warehouse_147.txt")
@@ -1041,7 +1041,7 @@ if __name__ == '__main__':
     test_actions()
     test_results()
     test_check_elem_action_seq()
-    test_h()
+    test_h_admissibility()
     test_h_consistency()
     test_solve_weighted_sokoban()
     test_solve_weighted_sokoban2()
