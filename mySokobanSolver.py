@@ -45,8 +45,6 @@ import time
 import math
 
 
-
-
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -478,7 +476,7 @@ class SokobanPuzzle(search.Problem):
         assert isinstance(state, State)
 
         possible_actions = []
-        # For each allowable ACTIONAU
+        # For each allowable ACTION
 
         for move in ACTIONS:
             new_pos = step(state.worker, move)
